@@ -1,0 +1,14 @@
+[package]
+name = "simple_editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derive_is_enum_variant = "*"
+serde = "*"
+serde-hjson = "*"
+
+[dependencies.sdl2]
+version = "0.35"
+default-features = false
+features = ["image"]
