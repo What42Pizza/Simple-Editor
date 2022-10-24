@@ -1,15 +1,18 @@
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
 
-use std::{time::Duration};
+use std::{time::Duration,
+    sync::{Arc, Mutex}
+};
 use sdl2::{EventPump, event::Event, keyboard::Keycode};
 
 
 
-pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump, dt: &Duration) -> Result<()> {
+pub fn update (program_data: &mut Arc<Mutex<&mut ProgramData>>, event_pump: &mut EventPump, dt: &Duration) -> Result<bool> {
+    let mut program_data = program_data.lock().unwrap();
     
-    process_events(program_data, event_pump)?;
+    process_events(&mut program_data, event_pump)?;
 
-    Ok(())
+    Ok(program_data.exit)
 
 }
 

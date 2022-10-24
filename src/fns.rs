@@ -2,7 +2,7 @@ use crate::{data::{program_data::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
 use sdl2::{render::Texture, rect::Rect};
-use serde_hjson::Value;
+use serde_hjson::{Value, Map};
 
 
 
@@ -53,4 +53,56 @@ pub fn get_value_type_name (value: &Value) -> String {
         Value::Array(_) => "Array",
         Value::Object(_) => "Object",
     })
+}
+
+
+
+
+
+pub fn get_hjson_array<'a> (starting_object: &'a Map<String, Value>, full_key: &str) -> Option<&'a Vec<Value>> {
+
+    let (parent_object, key) = match get_hjson_parent_object (starting_object, full_key) {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not find setting \"{}\"", full_key);
+            return None;
+        }
+    };
+
+    let found_value = match parent_object.get(&*key) {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not find setting \"{}\"", full_key);
+            return None;
+        }
+    };
+    match found_value {
+        Value::Array(v) => Some(v),
+        _ => {
+            println!("Warning: setting \"{}\" is not an array", full_key);
+            return None;
+        }
+    }
+
+}
+
+
+
+pub fn get_hjson_parent_object<'a> (starting_object: &'a Map<String, Value>, key: &str) -> Option<(&'a Map<String, Value>, String)> {
+
+    let mut current_object = starting_object;
+    let keys = key.split("/").collect::<Vec<&str>>();
+    for current_key in keys.iter().take(keys.len() - 1) {
+        let next_object = match current_object.get(&current_key.to_string()) {
+            Some(v) => v,
+            None => {return None;}
+        };
+        current_object = match next_object {
+            Value::Object(v) => &v,
+            _ => {return None;}
+        };
+    }
+
+    Some((current_object, keys[keys.len()-1].to_string()))
+
 }

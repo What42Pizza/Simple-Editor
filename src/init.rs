@@ -160,7 +160,7 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
 
 fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSettings> {
 
-    let last_open_files = get_hjson_string_array(&settings, "continue details/last open files", || vec!());
+    let last_open_files = get_last_open_files(&settings);
     println!("{:#?}", last_open_files);
 
     Ok(ProgramSettings {
@@ -170,22 +170,11 @@ fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSetti
 
 
 
+fn get_last_open_files (settings: &Map<String, Value>) -> Vec<String> {
 
-
-fn get_hjson_string_array (starting_object: &Map<String, Value>, key: &str, default: impl FnOnce() -> Vec<String>) -> Vec<String> {
-
-    let (parent_object, key) = match get_hjson_parent_object (starting_object, key) {
+    let array = match fns::get_hjson_array(settings, "continue details/last open files"){
         Some(v) => v,
-        None => {return default();}
-    };
-
-    let found_value = match parent_object.get(&*key) {
-        Some(v) => v,
-        None => {return default();}
-    };
-    let array = match found_value {
-        Value::Array(v) => v,
-        _ => {return default();}
+        None => {return vec!();}
     };
 
     let mut output = vec!();
@@ -197,27 +186,6 @@ fn get_hjson_string_array (starting_object: &Map<String, Value>, key: &str, defa
     }
 
     output
-}
-
-
-
-fn get_hjson_parent_object<'a> (starting_object: &'a Map<String, Value>, key: &str) -> Option<(&'a Map<String, Value>, String)> {
-
-    let mut current_object = starting_object;
-    let keys = key.split("/").collect::<Vec<&str>>();
-    for current_key in keys.iter().take(keys.len() - 2) {
-        let next_object = match current_object.get(&current_key.to_string()) {
-            Some(v) => v,
-            None => {return None;}
-        };
-        current_object = match next_object {
-            Value::Object(v) => &v,
-            _ => {return None;}
-        };
-    }
-
-    Some((current_object, keys[keys.len()-1].to_string()))
-
 }
 
 

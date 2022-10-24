@@ -19,6 +19,7 @@
 mod update;
 mod render;
 mod init;
+mod task_fns;
 mod data;
 mod fns;
 
@@ -29,10 +30,17 @@ extern crate derive_is_enum_variant;
 
 
 
-use std::{time::Instant};
-use sdl2::{render::{TextureCreator, Canvas}, video::{WindowContext, Window}, EventPump};
+use std::{time::Instant, thread, result::Result as stdResult,
+    sync::{Arc, Mutex,
+        mpsc::{self, *}
+    }
+};
+use sdl2::{EventPump,
+    render::{TextureCreator, Canvas},
+    video::{WindowContext, Window}
+};
 
-use crate::{data::{program_data::*, errors::*, errors::Result::*}};
+use crate::{data::{program_data::*, errors::*, errors::Result::*}, task_fns::tasks as tasks};
 
 
 
@@ -56,18 +64,29 @@ fn main() {
 
 
 fn run_program<'a> (program_data: &mut ProgramData<'a>, mut canvas: Canvas<Window>, texture_creator: &'a TextureCreator<WindowContext>, mut event_pump: EventPump) -> Result<()> {
-    let mut last_update_instant = Instant::now();
 
     init::init_program_data(program_data, &texture_creator)?;
+    
+    let mut program_data_mutex = Arc::new(Mutex::new(program_data));
+    let (tx, rx): (Sender<TaskUpdateInfo>, Receiver<TaskUpdateInfo>) = mpsc::channel();
+    let task_thread = thread::spawn(move || tasks::run_tasks(tx));
 
-    while !program_data.exit {
+    let mut last_update_instant = Instant::now();
+    loop {
 
         let dt = last_update_instant.elapsed();
         last_update_instant = Instant::now();
-        update::update(program_data, &mut event_pump, &dt)?;
 
-        render::render(&mut canvas, program_data)?;
+        let exit = update::update(&mut program_data_mutex, &mut event_pump, &dt)?;
+        render::render(&mut canvas, &program_data_mutex)?;
 
+        if exit {break;}
+
+    }
+
+    let task_thread_result = task_thread.join();
+    if let stdResult::Err(error) = task_thread_result {
+        println!("Warning: tasks thread returned an error: {:?}", error);
     }
 
     Ok(())

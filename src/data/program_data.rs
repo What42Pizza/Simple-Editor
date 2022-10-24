@@ -10,7 +10,6 @@ pub struct ProgramData<'a> {
     pub textures: Option<ProgramTextures<'a>>,
     pub frame_count: u32, // overflows after ~10,000 hours at 120 fps
     pub exit: bool,
-
     pub settings: Option<ProgramSettings>,
 
     pub tasks: Vec<ProgramTask>,
@@ -20,13 +19,13 @@ pub struct ProgramData<'a> {
 }
 
 impl<'a> ProgramData<'a> {
+
     pub fn new() -> Self {
         Self {
 
             textures: None,
             frame_count: 0,
             exit: false,
-
             settings: None,
 
             tasks: vec!(),
@@ -35,6 +34,7 @@ impl<'a> ProgramData<'a> {
 
         }
     }
+
 }
 
 
@@ -69,4 +69,12 @@ pub enum ProgramTask {
 pub struct File {
     pub path: String,
     pub contents: Vec<String>,
+}
+
+
+
+
+
+pub enum TaskUpdateInfo {
+    AddFile (File)
 }

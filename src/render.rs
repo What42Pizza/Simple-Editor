@@ -1,10 +1,12 @@
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
 
+use std::sync::{Arc, Mutex};
 use sdl2::{render::WindowCanvas};
 
 
 
-pub fn render(canvas: &mut WindowCanvas, program_data: &mut ProgramData) -> Result<()> {
+pub fn render(canvas: &mut WindowCanvas, program_data: &Arc<Mutex<&mut ProgramData>>) -> Result<()> {
+    let mut program_data = program_data.lock().unwrap();
     let textures = &program_data.textures;
     let (width, height) = canvas.output_size().to_custom_err()?;
 
@@ -13,7 +15,6 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &mut ProgramData) -> Resu
 
     // finish
     canvas.present();
-    program_data.frame_count += 1;
     Ok(())
 
 }
