@@ -7,7 +7,7 @@ use sdl2::{EventPump, event::Event, keyboard::Keycode};
 
 
 
-pub fn update (program_data: &mut Arc<Mutex<&mut ProgramData>>, event_pump: &mut EventPump, dt: &Duration) -> Result<bool> {
+pub fn update (program_data: &mut Arc<Mutex<ProgramData>>, event_pump: &mut EventPump, dt: &Duration) -> Result<bool> {
     let mut program_data = program_data.lock().unwrap();
     
     process_events(&mut program_data, event_pump)?;

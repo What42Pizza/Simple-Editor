@@ -41,12 +41,12 @@ pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
 
 
 
-pub fn init_program_data<'a> (program_data: &mut ProgramData<'a>, texture_creator: &'a TextureCreator<WindowContext>) -> Result<()> {
+pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>> {
 
-    program_data.textures = Some(load_textures(texture_creator)?);
+    let textures = load_textures(texture_creator)?;
     program_data.settings = Some(load_settings()?);
 
-    Ok(())
+    Ok(textures)
 
 }
 

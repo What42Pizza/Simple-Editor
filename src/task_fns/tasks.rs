@@ -1,9 +1,9 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc, Mutex};
 
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
 
 
 
-pub fn run_tasks<'a> (tx: Sender<TaskUpdateInfo>) {
+pub fn run_tasks<'a> (program_data_mutex: Arc<Mutex<ProgramData>>) {
     
 }

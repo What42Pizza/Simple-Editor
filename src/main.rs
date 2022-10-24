@@ -32,7 +32,7 @@ extern crate derive_is_enum_variant;
 
 use std::{time::Instant, thread, result::Result as stdResult,
     sync::{Arc, Mutex,
-        mpsc::{self, *}
+        mpsc::{self}
     }
 };
 use sdl2::{EventPump,
@@ -46,15 +46,9 @@ use crate::{data::{program_data::*, errors::*, errors::Result::*}, task_fns::tas
 
 fn main() {
 
-    // sdl
-    let (sdl_context, canvas) = init::init_sdl2();
-    let event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
-    let texture_creator = canvas.texture_creator();
+    let mut program_data = Arc::new(Mutex::new(ProgramData::new()));
 
-    let mut program_data = ProgramData::new();
-
-    let success = run_program(&mut program_data, canvas, &texture_creator, event_pump);
-    if let Err(error) = success {
+    if let Err(error) = run_program(&mut program_data) {
         println!("\nError while running program: {}\n", error);
         println!("\n\n\nProgram data: {:#?}\n", program_data);
     }
@@ -63,27 +57,34 @@ fn main() {
 
 
 
-fn run_program<'a> (program_data: &mut ProgramData<'a>, mut canvas: Canvas<Window>, texture_creator: &'a TextureCreator<WindowContext>, mut event_pump: EventPump) -> Result<()> {
+fn run_program (program_data: &mut Arc<Mutex<ProgramData>>) -> Result<()> {
 
-    init::init_program_data(program_data, &texture_creator)?;
-    
-    let mut program_data_mutex = Arc::new(Mutex::new(program_data));
-    let (tx, rx): (Sender<TaskUpdateInfo>, Receiver<TaskUpdateInfo>) = mpsc::channel();
-    let task_thread = thread::spawn(move || tasks::run_tasks(tx));
+    // sdl
+    let (sdl_context, mut canvas) = init::init_sdl2();
+    let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
+    let texture_creator = canvas.texture_creator();
 
+    // main init
+    let tetuxres = init::init_program_data(&mut program_data.lock().unwrap(), &texture_creator)?;
+
+    // threading
+    let thread_program_data_mutex = program_data.clone();
+    let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex));
+
+    // main loop
     let mut last_update_instant = Instant::now();
     loop {
 
         let dt = last_update_instant.elapsed();
         last_update_instant = Instant::now();
 
-        let exit = update::update(&mut program_data_mutex, &mut event_pump, &dt)?;
-        render::render(&mut canvas, &program_data_mutex)?;
-
-        if exit {break;}
+        let exit = update::update(program_data, &mut event_pump, &dt)?;
+        if exit {return Ok(());}
+        render::render(&mut canvas, &program_data, &tetuxres)?;
 
     }
 
+    // wait for threads
     let task_thread_result = task_thread.join();
     if let stdResult::Err(error) = task_thread_result {
         println!("Warning: tasks thread returned an error: {:?}", error);
