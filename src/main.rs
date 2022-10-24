@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 10/23/22
+// Last updated 10/24/22
 
 
 
@@ -30,23 +30,17 @@ extern crate derive_is_enum_variant;
 
 
 
-use std::{time::Instant, thread, result::Result as stdResult,
-    sync::{Arc, Mutex,
-        mpsc::{self}
-    }
-};
-use sdl2::{EventPump,
-    render::{TextureCreator, Canvas},
-    video::{WindowContext, Window}
-};
+use std::{time::Instant, thread, result::Result as stdResult};
 
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, task_fns::tasks as tasks};
 
 
 
+
+
 fn main() {
 
-    let mut program_data = Arc::new(Mutex::new(ProgramData::new()));
+    let mut program_data = ProgramData::new();
 
     if let Err(error) = run_program(&mut program_data) {
         println!("\nError while running program: {}\n", error);
@@ -57,7 +51,7 @@ fn main() {
 
 
 
-fn run_program (program_data: &mut Arc<Mutex<ProgramData>>) -> Result<()> {
+fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     // sdl
     let (sdl_context, mut canvas) = init::init_sdl2();
@@ -65,7 +59,7 @@ fn run_program (program_data: &mut Arc<Mutex<ProgramData>>) -> Result<()> {
     let texture_creator = canvas.texture_creator();
 
     // main init
-    let tetuxres = init::init_program_data(&mut program_data.lock().unwrap(), &texture_creator)?;
+    let tetuxres = init::init_program_data(program_data, &texture_creator)?;
 
     // threading
     let thread_program_data_mutex = program_data.clone();
@@ -79,8 +73,8 @@ fn run_program (program_data: &mut Arc<Mutex<ProgramData>>) -> Result<()> {
         last_update_instant = Instant::now();
 
         let exit = update::update(program_data, &mut event_pump, &dt)?;
-        if exit {return Ok(());}
-        render::render(&mut canvas, &program_data, &tetuxres)?;
+        if exit {break;}
+        render::render(&mut canvas, program_data, &tetuxres)?;
 
     }
 

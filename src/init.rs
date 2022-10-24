@@ -1,6 +1,6 @@
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
 
-use std::{fs, path::PathBuf, result::Result as stdResult};
+use std::{fs, path::PathBuf};
 use serde_hjson::{Map, Value};
 
 use sdl2::{Sdl, pixels::Color,
@@ -44,7 +44,7 @@ pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
 pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>> {
 
     let textures = load_textures(texture_creator)?;
-    program_data.settings = Some(load_settings()?);
+    program_data.settings = Shared::take(Some(load_settings()?));
 
     Ok(textures)
 
@@ -147,8 +147,8 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
         println!("Warning: settings version is invalid (greater than most recent settings version ({}))", SETTINGS_UPDATER_FNS.len() - 1);
     }
 
-    for i in settings_version..SETTINGS_UPDATER_FNS.len() {
-        SETTINGS_UPDATER_FNS[i](&mut settings);
+    for updater_fn in SETTINGS_UPDATER_FNS.iter().skip(settings_version) {
+        updater_fn(settings);
     }
 
     Ok(settings.to_owned())
@@ -179,9 +179,8 @@ fn get_last_open_files (settings: &Map<String, Value>) -> Vec<String> {
 
     let mut output = vec!();
     for current_value in array {
-        match current_value {
-            Value::String(v) => output.push(v.to_string()),
-            _ => {},
+        if let Value::String(string) = current_value {
+            output.push(string.to_string());
         }
     }
 
@@ -192,8 +191,10 @@ fn get_last_open_files (settings: &Map<String, Value>) -> Vec<String> {
 
 
 
-const SETTINGS_UPDATER_FNS: [&dyn Fn(&mut Map<String, Value>); 1] = [
-    /* 0 */ &|settings| {
+type SettingsUpdaterFn = dyn Fn(&mut Map<String, Value>);
+
+const SETTINGS_UPDATER_FNS: [&SettingsUpdaterFn; 1] = [
+    /* 0 */ &|_| {
         println!("Settings are up to date");
     },
 ];
