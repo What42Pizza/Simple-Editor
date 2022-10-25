@@ -16,7 +16,6 @@
 
 
 
-mod update;
 mod render;
 mod init;
 mod finish;
@@ -31,9 +30,12 @@ extern crate derive_is_enum_variant;
 
 
 
-use std::{time::Instant, thread};
-
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, task_fns::tasks as tasks};
+
+use std::{thread,
+    sync::mpsc::{Sender, self, Receiver}
+};
+use sdl2::{EventPump};
 
 
 
@@ -60,27 +62,34 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     let texture_creator = canvas.texture_creator();
 
     // main init
-    let tetuxres = init::init_program_data(program_data, &texture_creator)?;
-
-    // threading
+    let (tasks_tx, tasks_rx): (Sender<ProgramTask>, Receiver<ProgramTask>) = mpsc::channel();
+    let tetuxres = init::init_program_data(program_data, &texture_creator, &tasks_tx)?;
     let thread_program_data_mutex = program_data.clone();
-    let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex));
+    let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex, tasks_rx));
 
     // main loop
-    let mut last_update_instant = Instant::now();
-    loop {
+    while !*program_data.exit.lock().unwrap() {
 
-        let dt = last_update_instant.elapsed();
-        last_update_instant = Instant::now();
+        update(program_data, &mut event_pump, &tasks_tx);
 
-        let exit = update::update(program_data, &mut event_pump, &dt)?;
-        if exit {break;}
         render::render(&mut canvas, program_data, &tetuxres)?;
 
     }
 
-    finish::finish(program_data, task_thread)?;
+    finish::finish(program_data, task_thread, tasks_tx)?;
 
     Ok(())
+
+}
+
+
+
+fn update (program_data: &mut ProgramData, event_pump: &mut EventPump, tasks_tx: &Sender<ProgramTask>) {
+
+    *program_data.frame_count.lock().unwrap() += 1;
+    
+    for event in event_pump.poll_iter() {
+        let _ = tasks_tx.send(ProgramTask::HandleEvent(event));
+    }
 
 }

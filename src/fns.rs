@@ -1,7 +1,7 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
-use sdl2::{render::Texture, rect::Rect, sys::ConfigureRequest};
+use sdl2::{render::Texture, rect::Rect};
 use serde_hjson::{Value, Map};
 
 

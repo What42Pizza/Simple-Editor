@@ -1,9 +1,7 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
-use std::{fs, path::PathBuf};
-use serde::__private::de;
+use std::{fs, sync::mpsc::Sender};
 use serde_hjson::{Map, Value};
-
 use sdl2::{Sdl, pixels::Color,
     image::{self, LoadTexture, InitFlag},
     render::{Canvas, TextureCreator, Texture},
@@ -42,12 +40,12 @@ pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
 
 
 
-pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>> {
+pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, tasks_tx: &Sender<ProgramTask>) -> Result<ProgramTextures<'a>> {
 
     let textures = load_textures(texture_creator)?;
     program_data.settings = Shared::take(Some(load_settings()?));
 
-    continue_session(program_data)?;
+    continue_session(program_data, tasks_tx)?;
 
     Ok(textures)
 
@@ -124,10 +122,10 @@ pub fn load_raw_settings() -> Result<Option<String>> {
 
 
 
-pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
+pub fn update_settings (settings: Value) -> Result<Map<String, Value>> {
     
     if !settings.is_object() {return err("LoadSettingsError", "Settings file is not an hjson object");}
-    let mut settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
+    let settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
 
     let settings_version = match get_setting_defaultless(settings, "settings version", Value::as_u64, "u64") {
         Some(v) => v,
@@ -169,14 +167,13 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
 
 
 
-pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
+pub fn continue_session (program_data: &mut ProgramData, tasks_tx: &Sender<ProgramTask>) -> Result<()> {
 
     let settings = program_data.settings.lock().unwrap();
     let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
-    let mut tasks = program_data.tasks.lock().unwrap();
 
     for file_path in &continue_details.last_open_files {
-        tasks.push(ProgramTask::LoadFile(file_path.to_string()));
+        let _ = tasks_tx.send(ProgramTask::LoadFile(file_path.to_string()));
     }
 
     Ok(())
