@@ -1,7 +1,7 @@
 use crate::{data::{program_data::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
-use sdl2::{render::Texture, rect::Rect};
+use sdl2::{render::Texture, rect::Rect, sys::ConfigureRequest};
 use serde_hjson::{Value, Map};
 
 
@@ -37,6 +37,16 @@ pub fn get_file_exists (path: &PathBuf) -> Result<bool> {
     match err.kind() {
         std::io::ErrorKind::NotFound => Ok(false),
         _ => Err(err.into()),
+    }
+}
+
+
+
+pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
+    if condition {
+        Some(some_fn())
+    } else {
+        None
     }
 }
 

@@ -69,6 +69,11 @@ impl Debug for ProgramTextures<'_> {
 
 #[derive(Debug)]
 pub struct ProgramSettings {
+    pub continue_details: SettingsContinueDetails,
+}
+
+#[derive(Debug)]
+pub struct SettingsContinueDetails {
     pub last_open_files: Vec<String>,
 }
 

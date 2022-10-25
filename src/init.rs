@@ -160,31 +160,25 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
 
 fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSettings> {
 
-    let last_open_files = get_last_open_files(&settings);
-    println!("{:#?}", last_open_files);
+    let last_open_files = get_hjson_string_array(&settings, "continue details/last open files").unwrap_or(vec!());
 
     Ok(ProgramSettings {
-        last_open_files,
+
+        continue_details: SettingsContinueDetails {
+            last_open_files,
+        },
+
     })
 }
 
 
 
-fn get_last_open_files (settings: &Map<String, Value>) -> Vec<String> {
-
-    let array = match fns::get_hjson_array(settings, "continue details/last open files"){
-        Some(v) => v,
-        None => {return vec!();}
-    };
-
-    let mut output = vec!();
-    for current_value in array {
-        if let Value::String(string) = current_value {
-            output.push(string.to_string());
-        }
-    }
-
-    output
+fn get_hjson_string_array (settings: &Map<String, Value>, key: &str) -> Option<Vec<String>> {
+    Some(fns::get_hjson_array(settings, key)?.iter()
+        .filter_map(|value|
+            value.as_str().map(|s| s.to_string())
+        )
+        .collect())
 }
 
 

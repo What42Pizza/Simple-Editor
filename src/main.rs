@@ -19,6 +19,7 @@
 mod update;
 mod render;
 mod init;
+mod finish;
 mod task_fns;
 mod data;
 mod fns;
@@ -30,7 +31,7 @@ extern crate derive_is_enum_variant;
 
 
 
-use std::{time::Instant, thread, result::Result as stdResult};
+use std::{time::Instant, thread};
 
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, task_fns::tasks as tasks};
 
@@ -78,11 +79,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     }
 
-    // wait for threads
-    let task_thread_result = task_thread.join();
-    if let stdResult::Err(error) = task_thread_result {
-        println!("Warning: tasks thread returned an error: {:?}", error);
-    }
+    finish::finish(program_data, task_thread)?;
 
     Ok(())
 
