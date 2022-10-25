@@ -1,6 +1,7 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use std::{fs, path::PathBuf};
+use serde::__private::de;
 use serde_hjson::{Map, Value};
 
 use sdl2::{Sdl, pixels::Color,
@@ -70,29 +71,39 @@ pub fn load_texture<'a> (texture_name: &str, texture_creator: &'a TextureCreator
 
 pub fn load_settings() -> Result<ProgramSettings> {
 
-    let raw_settings = &*load_raw_settings()
-        .err_details("Could not load existing settings or default settings")?;
-    
-    process_settings(raw_settings).or_else(|e| {
+    let default_settings = ProgramSettings::default();
+
+    let raw_settings = match
+        load_raw_settings()
+            .err_details("Could not load existing settings or default settings")?
+    {
+        Some(v) => v,
+        None => {
+            println!("Warning: no settings file found, using default settings");
+            return Ok(default_settings);
+        }
+    };
+
+    process_settings(&*raw_settings, &default_settings).or_else(|e| {
         println!("Warning: could not deserialize existing settings. Loading default settings...");
         println!("Error: {:#?}", e);
-        process_settings(include_str!("default_settings.hjson"))
+        Ok(default_settings)
     })
 
 }
 
 
 
-fn process_settings (raw_settings: &str) -> Result<ProgramSettings> {
+fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
     let settings = serde_hjson::from_str(raw_settings).to_custom_err()?;
     let settings = update_settings(settings)?;
-    let settings = get_settings_from_hjson(settings)?;
+    let settings = get_settings_from_hjson(settings, default_settings)?;
     Ok(settings)
 }
 
 
 
-pub fn load_raw_settings() -> Result<String> {
+pub fn load_raw_settings() -> Result<Option<String>> {
 
     let mut settings_path = fns::get_program_dir();
     settings_path.push("settings.txt");
@@ -100,23 +111,15 @@ pub fn load_raw_settings() -> Result<String> {
         .err_details("Could not query location of settings file")
         .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?
     {
-        create_default_settings_file(&settings_path)?;
+        return Ok(None);
     }
 
     let raw_settings = fs::read_to_string(&settings_path)
         .err_details("Could not read settings file")
         .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?;
 
-    Ok(raw_settings)
+    Ok(Some(raw_settings))
 
-}
-
-
-
-pub fn create_default_settings_file (path: &PathBuf) -> Result<()> {
-    fs::write(path, include_str!("default_settings.hjson"))
-        .err_details("Failed to create default settings file")
-        .err_details_lazy(|| "  Path: ".to_string() + &path.as_path().to_string_lossy())
 }
 
 
@@ -126,10 +129,10 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
     if !settings.is_object() {return err("LoadSettingsError", "Settings file is not an hjson object");}
     let mut settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
 
-    let settings_version = match fns::get_setting_value(settings, "settings version", Value::as_u64, "u64") {
-        Ok(v) => v,
-        Err(error) => {
-            println!("Warning: could not get settings version: {:?}", error);
+    let settings_version = match get_setting_defaultless(settings, "settings version", Value::as_u64, "u64") {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not get settings version, settings will not be updated");
             return Ok(settings.to_owned());
         }
     } as usize;
@@ -150,14 +153,13 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
 
 
 
-fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSettings> {
-
-    let last_open_files = fns::get_hjson_string_array(&settings, "continue details/last open files").unwrap_or_default();
-
+fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
     Ok(ProgramSettings {
 
+        background_color: get_setting_color(&settings, "background color", default_settings.background_color),
+
         continue_details: ContinueDetails {
-            last_open_files,
+            last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),
         },
 
     })
@@ -168,6 +170,14 @@ fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSetti
 
 
 pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
+
+    let settings = program_data.settings.lock().unwrap();
+    let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
+    let mut tasks = program_data.tasks.lock().unwrap();
+
+    for file_path in &continue_details.last_open_files {
+        tasks.push(ProgramTask::LoadFile(file_path.to_string()));
+    }
 
     Ok(())
 }

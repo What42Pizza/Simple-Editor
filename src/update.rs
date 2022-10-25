@@ -9,13 +9,24 @@ pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump, dt: &
     
     process_events(program_data, event_pump)?;
 
+    temp_print_errors(program_data);
+
     Ok(*program_data.exit.lock().unwrap())
 
 }
 
 
 
-fn process_events (program_data: &mut ProgramData, event_pump: &mut EventPump) -> Result<()> {
+pub fn temp_print_errors (program_data: &mut ProgramData) {
+    for error in program_data.errors.lock().unwrap().iter() {
+        println!("Error: {}", error);
+    }
+    *program_data.errors.lock().unwrap() = vec!();
+}
+
+
+
+pub fn process_events (program_data: &mut ProgramData, event_pump: &mut EventPump) -> Result<()> {
     
     for event in event_pump.poll_iter() {
         match event {

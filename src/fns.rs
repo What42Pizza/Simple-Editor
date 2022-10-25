@@ -52,6 +52,12 @@ pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
 
 
 
+pub fn u64_to_color (input: u64) -> Option<u32> {
+    some_if(input <= 0xFFFFFF, || input as u32)
+}
+
+
+
 pub fn get_value_type_name (value: &Value) -> String {
     String::from(match value {
         Value::Null => "Null",
@@ -67,56 +73,10 @@ pub fn get_value_type_name (value: &Value) -> String {
 
 
 
-
-
-pub fn get_setting_value<T> (settings: &Map<String, Value>, full_key: &str, value_fn: impl FnOnce(&Value) -> Option<T>, value_type_name: &str) -> Result<T> {
-
-    let found_value = match get_hjson_value(settings, full_key) {
-        Some(v) => v,
-        None => {
-            return err("LoadSettingsError", &*("could not find setting \"".to_string() + full_key + "\""));
-        }
-    };
-
-    match value_fn(found_value) {
-        Some(v) => Ok(v),
-        None => {
-            err("LoadSettingsError", &*("setting \"".to_string() + full_key + "\" is not of type " + value_type_name))
-        }
-    }
-
-}
-
-
-
-pub fn get_hjson_array<'a> (starting_object: &'a Map<String, Value>, full_key: &str) -> Option<&'a Vec<Value>> {
-
-    match get_hjson_value (starting_object, full_key)? {
-        Value::Array(v) => Some(v),
-        _ => {
-            println!("Warning: setting \"{}\" is not an array", full_key);
-            None
-        }
-    }
-
-}
-
-
-
-pub fn get_hjson_string_array (settings: &Map<String, Value>, key: &str) -> Option<Vec<String>> {
-    Some(get_hjson_array(settings, key)?.iter()
-        .filter_map(|value|
-            value.as_str().map(|s| s.to_string())
-        )
-        .collect())
-}
-
-
-
-pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, key: &str) -> Option<&'a Value> {
+pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, full_key: &str) -> Option<&'a Value> {
 
     let mut current_object = starting_object;
-    let keys = key.split('/').collect::<Vec<&str>>();
+    let keys = full_key.split('/').collect::<Vec<&str>>();
     for current_key in keys.iter().take(keys.len() - 1) {
         let next_object = match current_object.get(&current_key.to_string()) {
             Some(v) => v,

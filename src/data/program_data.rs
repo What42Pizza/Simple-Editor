@@ -18,7 +18,7 @@ pub struct ProgramData {
     pub tasks: Shared<Vec<ProgramTask>>,
     pub errors: Shared<Vec<Error>>,
 
-    pub open_files: Shared<Vec<File>>,
+    pub files: Shared<Vec<File>>,
 
 }
 
@@ -33,7 +33,7 @@ impl ProgramData {
             tasks: Shared::take(vec!()),
             errors: Shared::take(vec!()),
 
-            open_files: Shared::take(vec!()),
+            files: Shared::take(vec!()),
 
         }
     }
@@ -47,7 +47,7 @@ impl ProgramData {
             tasks: self.tasks.clone(),
             errors: self.errors.clone(),
 
-            open_files: self.open_files.clone(),
+            files: self.files.clone(),
 
         }
     }
@@ -67,41 +67,36 @@ impl Debug for ProgramTextures<'_> {
 
 
 
-
-
-/*
-pub struct ProgramTask {
-    task_type: ProgramTaskType,
-    on_start: Option<Box<dyn FnOnce() + Send>>,
-    on_end: Option<Box<dyn FnOnce() + Send>>,
-}
-
-impl Debug for ProgramTask {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> stdResult<(), fmt::Error> {
-        write!(formatter, "Program task {:?}", self.task_type)
-    }
-}
-*/
-
-#[derive(Debug)]
-pub enum ProgramTask {
-    LoadFile (String)
-}
-
-
-
 #[derive(Debug)]
 pub struct File {
     pub path: String,
     pub contents: Vec<String>,
+    pub cursors: Vec<Cursor>,
+    pub selection_start: Option<(usize, usize)>,
 }
 
+impl File {
+    pub fn new (path: String, contents: Vec<String>) -> Self {
+        Self {
+            path: path,
+            contents: contents,
+            cursors: vec![
+                Cursor {
+                    x: 0,
+                    y: 0,
+                    wanted_x: 0,
+                }
+            ],
+            selection_start: None,
+        }
+    }
+}
 
-
-
-
-pub enum TaskUpdateInfo {
-    AddFile (File)
+#[derive(Debug)]
+pub struct Cursor {
+    pub x: usize,
+    pub y: usize,
+    pub wanted_x: usize,
 }
 
 
@@ -118,4 +113,14 @@ impl<T> SharedFns<T> for Shared<T> {
     fn take (v: T) -> Self {
         Arc::new(Mutex::new(v))
     }
+}
+
+
+
+
+
+#[derive(Debug)]
+pub enum ProgramTask {
+    LoadFile (String),
+    SaveFile (String),
 }

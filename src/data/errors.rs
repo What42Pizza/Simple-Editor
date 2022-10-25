@@ -9,6 +9,35 @@ use sdl2::{video::WindowBuildError, IntegerOrSdlError};
 
 
 
+// ---------------- Additng to std::option::Option ----------------
+
+pub trait CustomOptionFns<T> {
+    fn none_err (&self, error_name: &str, error_details: &str) -> Result<&T>;
+    fn none_err_lazy (&self, error_name: &str, error_details_fn: impl FnOnce() -> String) -> Result<&T>;
+}
+
+impl<T> CustomOptionFns<T> for Option<T> {
+
+    fn none_err (&self, error_name: &str, error_details: &str) -> Result<&T> {
+        match self {
+            Some(v) => Ok(v),
+            None => err(error_name, error_details),
+        }
+    }
+
+    fn none_err_lazy (&self, error_name: &str, error_details_fn: impl FnOnce() -> String) -> Result<&T> {
+        match self {
+            Some(v) => Ok(v),
+            None => err(error_name, &*error_details_fn()),
+        }
+    }
+
+}
+
+
+
+
+
 // ---------------- Adding to std::result::Result ----------------
 
 pub trait CustomResultFns<T, E> where Error: From<E> {

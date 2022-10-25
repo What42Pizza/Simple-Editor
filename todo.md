@@ -1,6 +1,5 @@
 # Todo
 
-Add last open files to tasks
-Handle open file tasks
 Render files
+    Load and render font
 Set continue details (in finish)
