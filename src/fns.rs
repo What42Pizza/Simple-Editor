@@ -1,4 +1,4 @@
-use crate::{data::{program_data::*, errors::*, errors::Result::*}};
+use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
 use sdl2::{render::Texture, rect::Rect, sys::ConfigureRequest};
@@ -69,6 +69,26 @@ pub fn get_value_type_name (value: &Value) -> String {
 
 
 
+pub fn get_setting_value<T> (settings: &Map<String, Value>, full_key: &str, value_fn: impl FnOnce(&Value) -> Option<T>, value_type_name: &str) -> Result<T> {
+
+    let found_value = match get_hjson_value(settings, full_key) {
+        Some(v) => v,
+        None => {
+            return err("LoadSettingsError", &*("could not find setting \"".to_string() + full_key + "\""));
+        }
+    };
+
+    match value_fn(found_value) {
+        Some(v) => Ok(v),
+        None => {
+            err("LoadSettingsError", &*("setting \"".to_string() + full_key + "\" is not of type " + value_type_name))
+        }
+    }
+
+}
+
+
+
 pub fn get_hjson_array<'a> (starting_object: &'a Map<String, Value>, full_key: &str) -> Option<&'a Vec<Value>> {
 
     match get_hjson_value (starting_object, full_key)? {
@@ -79,6 +99,16 @@ pub fn get_hjson_array<'a> (starting_object: &'a Map<String, Value>, full_key: &
         }
     }
 
+}
+
+
+
+pub fn get_hjson_string_array (settings: &Map<String, Value>, key: &str) -> Option<Vec<String>> {
+    Some(get_hjson_array(settings, key)?.iter()
+        .filter_map(|value|
+            value.as_str().map(|s| s.to_string())
+        )
+        .collect())
 }
 
 

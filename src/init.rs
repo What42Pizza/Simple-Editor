@@ -1,4 +1,4 @@
-use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
+use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use std::{fs, path::PathBuf};
 use serde_hjson::{Map, Value};
@@ -46,6 +46,8 @@ pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &
     let textures = load_textures(texture_creator)?;
     program_data.settings = Shared::take(Some(load_settings()?));
 
+    continue_session(program_data)?;
+
     Ok(textures)
 
 }
@@ -71,14 +73,11 @@ pub fn load_settings() -> Result<ProgramSettings> {
     let raw_settings = &*load_raw_settings()
         .err_details("Could not load existing settings or default settings")?;
     
-    match process_settings(raw_settings) {
-        Ok(v) => Ok(v),
-        Err(e) => {
-            println!("Warning: could not deserialize existing settings. Loading default settings...");
-            println!("Error: {:#?}", e);
-            process_settings(include_str!("default_settings.hjson"))
-        }
-    }
+    process_settings(raw_settings).or_else(|e| {
+        println!("Warning: could not deserialize existing settings. Loading default settings...");
+        println!("Error: {:#?}", e);
+        process_settings(include_str!("default_settings.hjson"))
+    })
 
 }
 
@@ -127,24 +126,17 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
     if !settings.is_object() {return err("LoadSettingsError", "Settings file is not an hjson object");}
     let mut settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
 
-    let settings_version = match settings.get("settings version") {
-        Some(settings_version) => settings_version,
-        None => {
-            println!("Warning: settings version could not be found");
-            return Ok(settings.to_owned());
-        }
-    };
-
-    let settings_version = match settings_version.as_u64() {
-        Some(settings_version) => settings_version,
-        None => {
-            println!("Warning: settings version is not a positive integer");
+    let settings_version = match fns::get_setting_value(settings, "settings version", Value::as_u64, "u64") {
+        Ok(v) => v,
+        Err(error) => {
+            println!("Warning: could not get settings version: {:?}", error);
             return Ok(settings.to_owned());
         }
     } as usize;
 
     if settings_version >= SETTINGS_UPDATER_FNS.len() {
         println!("Warning: settings version is invalid (greater than most recent settings version ({}))", SETTINGS_UPDATER_FNS.len() - 1);
+        return Ok(settings.to_owned());
     }
 
     for updater_fn in SETTINGS_UPDATER_FNS.iter().skip(settings_version) {
@@ -160,11 +152,11 @@ pub fn update_settings (mut settings: Value) -> Result<Map<String, Value>> {
 
 fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSettings> {
 
-    let last_open_files = get_hjson_string_array(&settings, "continue details/last open files").unwrap_or(vec!());
+    let last_open_files = fns::get_hjson_string_array(&settings, "continue details/last open files").unwrap_or_default();
 
     Ok(ProgramSettings {
 
-        continue_details: SettingsContinueDetails {
+        continue_details: ContinueDetails {
             last_open_files,
         },
 
@@ -173,12 +165,11 @@ fn get_settings_from_hjson (settings: Map<String, Value>) -> Result<ProgramSetti
 
 
 
-fn get_hjson_string_array (settings: &Map<String, Value>, key: &str) -> Option<Vec<String>> {
-    Some(fns::get_hjson_array(settings, key)?.iter()
-        .filter_map(|value|
-            value.as_str().map(|s| s.to_string())
-        )
-        .collect())
+
+
+pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
+
+    Ok(())
 }
 
 

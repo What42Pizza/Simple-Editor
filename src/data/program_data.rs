@@ -1,6 +1,6 @@
-use crate::{data::{errors::*, errors::Result::*}, fns};
+use crate::{data::{settings::*, errors::*, errors::Result::*}, fns};
 
-use std::{
+use std::{result::Result as stdResult,
     fmt::{self, Debug},
     sync::{Arc, Mutex}
 };
@@ -67,17 +67,21 @@ impl Debug for ProgramTextures<'_> {
 
 
 
-#[derive(Debug)]
-pub struct ProgramSettings {
-    pub continue_details: SettingsContinueDetails,
+
+
+/*
+pub struct ProgramTask {
+    task_type: ProgramTaskType,
+    on_start: Option<Box<dyn FnOnce() + Send>>,
+    on_end: Option<Box<dyn FnOnce() + Send>>,
 }
 
-#[derive(Debug)]
-pub struct SettingsContinueDetails {
-    pub last_open_files: Vec<String>,
+impl Debug for ProgramTask {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> stdResult<(), fmt::Error> {
+        write!(formatter, "Program task {:?}", self.task_type)
+    }
 }
-
-
+*/
 
 #[derive(Debug)]
 pub enum ProgramTask {

@@ -1,7 +1,8 @@
+use crate::{data::{program_data::*, settings::*, errors::Result::*}, fns};
+
 use std::{fmt, result::Result as stdResult,
     ops::{Try, ControlFlow, FromResidual}
 };
-
 use sdl2::{video::WindowBuildError, IntegerOrSdlError};
 
 
@@ -163,6 +164,14 @@ impl<T> Result<T> {
         self
     }
 
+    pub fn or_else (self, other: impl FnOnce(Error) -> Self) -> Self {
+        if let Self::Err(error) = self {
+            other(error)
+        } else {
+            self
+        }
+    }
+
 }
 
 
@@ -293,6 +302,14 @@ pub fn err<T> (error_name: &str, error_details: &str) -> Result<T> {
     Result::Err(Error{
         name: error_name.to_string(),
         details: vec!(error_details.to_string()),
+        cause: None,
+    })
+}
+
+pub fn err_lazy<T> (error_name: &str, error_details_fn: impl FnOnce() -> String) -> Result<T> {
+    Result::Err(Error{
+        name: error_name.to_string(),
+        details: vec!(error_details_fn()),
         cause: None,
     })
 }

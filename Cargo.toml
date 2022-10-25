@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-derive_is_enum_variant = "*"
-serde = "*"
-serde-hjson = "*"
+derive_is_enum_variant = "0.1"
+serde = "1.0"
+serde-hjson = "0.9"
 
 [dependencies.sdl2]
 version = "0.35"
 default-features = false
-features = ["image"]
+features = ["image", "ttf"]

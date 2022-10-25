@@ -1,4 +1,4 @@
-use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
+use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use std::{thread::JoinHandle, result::Result as stdResult};
 
