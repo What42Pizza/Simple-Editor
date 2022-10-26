@@ -1,7 +1,8 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
-use sdl2::{render::Texture, rect::Rect};
+use regex::Regex;
+use sdl2::{render::Texture, rect::Rect, pixels::Color};
 use serde_hjson::{Value, Map};
 
 
@@ -42,6 +43,14 @@ pub fn get_file_exists (path: &PathBuf) -> Result<bool> {
 
 
 
+pub fn split_lines (full_str: &str) -> Vec<String> {
+    Regex::new("((\r\n)|\n)").unwrap().split(full_str)
+        .map(|s| s.to_string())
+        .collect()
+}
+
+
+
 pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
     if condition {
         Some(some_fn())
@@ -52,8 +61,18 @@ pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
 
 
 
-pub fn u64_to_color (input: u64) -> Option<u32> {
-    some_if(input <= 0xFFFFFF, || input as u32)
+pub fn u64_to_color_rgb (input: u64) -> Option<Color> {
+    some_if(input <= 0xFFFFFF, || {
+        Color::RGB(
+            get_byte(input, 2),
+            get_byte(input, 1),
+            get_byte(input, 0),
+        )
+    })
+}
+
+pub fn get_byte (input: u64, byte_num: u8) -> u8 {
+    ((input & (0xFF << (byte_num * 8))) >> (byte_num * 8)) as u8
 }
 
 

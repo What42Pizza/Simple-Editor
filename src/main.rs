@@ -1,8 +1,9 @@
 // Started 10/21/22
-// Last updated 10/25/22
+// Last updated 10/26/22
 
 
 
+// SDL2 docs: https://rust-sdl2.github.io/rust-sdl2/sdl2/
 // hjson docs: https://docs.rs/serde-hjson/0.9.1/serde_hjson/
 
 
@@ -87,7 +88,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 fn update (program_data: &mut ProgramData, event_pump: &mut EventPump, tasks_tx: &Sender<ProgramTask>) {
 
     *program_data.frame_count.lock().unwrap() += 1;
-    
+
     for event in event_pump.poll_iter() {
         let _ = tasks_tx.send(ProgramTask::HandleEvent(event));
     }

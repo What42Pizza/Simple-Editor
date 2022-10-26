@@ -43,7 +43,7 @@ impl ProgramData {
             settings: self.settings.clone(),
             errors: self.errors.clone(),
 
-            current_file: Shared::take(None),
+            current_file: self.current_file.clone(),
             files: self.files.clone(),
 
         }
@@ -75,8 +75,8 @@ pub struct File {
 impl File {
     pub fn new (path: String, contents: Vec<String>) -> Self {
         Self {
-            path: path,
-            contents: contents,
+            path,
+            contents,
             cursors: vec![
                 Cursor {
                     x: 0,

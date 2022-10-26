@@ -1,5 +1,7 @@
 use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
 
+use std::fs;
+use sdl2::pixels::Color;
 use serde_hjson::{Map, Value};
 
 
@@ -7,7 +9,7 @@ use serde_hjson::{Map, Value};
 #[derive(Debug)]
 pub struct ProgramSettings {
 
-    pub background_color: u32,
+    pub background_color: Color,
 
     pub continue_details: ContinueDetails,
 
@@ -17,7 +19,7 @@ impl ProgramSettings {
     pub fn default() -> Self {
         Self {
 
-            background_color: 0x1B212F,
+            background_color: Color::RGB(27, 33, 47),
 
             continue_details: ContinueDetails {
                 last_open_files: vec!(),
@@ -32,6 +34,123 @@ impl ProgramSettings {
 #[derive(Debug)]
 pub struct ContinueDetails {
     pub last_open_files: Vec<String>,
+}
+
+
+
+
+
+type SettingsUpdaterFn = dyn Fn(&mut Map<String, Value>);
+
+const SETTINGS_UPDATER_FNS: [&SettingsUpdaterFn; 1] = [
+    /* 0 */ &|_| {
+        println!("Settings are up to date");
+    },
+];
+
+
+
+
+
+
+pub fn load_settings() -> ProgramSettings {
+
+    let default_settings = ProgramSettings::default();
+
+    let raw_settings = match load_raw_settings() {
+        Ok(v) => v,
+        Err(error) => {
+            println!("Warning: no settings file found, loading default settings...");
+            println!("Error: {}", error);
+            return default_settings;
+        }
+    };
+
+    let raw_settings = match raw_settings {
+        Some(v) => v,
+        None => {
+            println!("Warning: no settings file found, loading default settings...");
+            return default_settings;
+        }
+    };
+
+    process_settings(&raw_settings, &default_settings).unwrap_or(|e| {
+        println!("Warning: could not deserialize existing settings, loading default settings...");
+        println!("Error: {:#?}", e);
+        default_settings
+    })
+
+}
+
+
+
+fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
+    let settings = serde_hjson::from_str(raw_settings).to_custom_err()?;
+    let settings = update_settings(settings)?;
+    let settings = get_settings_from_hjson(settings, default_settings)?;
+    Ok(settings)
+}
+
+
+
+pub fn load_raw_settings() -> Result<Option<String>> {
+
+    let mut settings_path = fns::get_program_dir();
+    settings_path.push("settings.txt");
+    if !fns::get_file_exists(&settings_path)
+        .err_details("Could not query location of settings file")
+        .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?
+    {
+        return Ok(None);
+    }
+
+    let raw_settings = fs::read_to_string(&settings_path)
+        .err_details("Could not read settings file")
+        .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?;
+
+    Ok(Some(raw_settings))
+
+}
+
+
+
+pub fn update_settings (settings: Value) -> Result<Map<String, Value>> {
+    
+    if !settings.is_object() {return err("LoadSettingsError", "Settings file is not an hjson object");}
+    let settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
+
+    let settings_version = match get_setting_defaultless(settings, "settings version", Value::as_u64, "u64") {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not get settings version, settings will not be updated");
+            return Ok(settings.to_owned());
+        }
+    } as usize;
+
+    if settings_version >= SETTINGS_UPDATER_FNS.len() {
+        println!("Warning: settings version is invalid (greater than most recent settings version ({}))", SETTINGS_UPDATER_FNS.len() - 1);
+        return Ok(settings.to_owned());
+    }
+
+    for updater_fn in SETTINGS_UPDATER_FNS.iter().skip(settings_version) {
+        updater_fn(settings);
+    }
+
+    Ok(settings.to_owned())
+}
+
+
+
+fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
+    Ok(ProgramSettings {
+
+        background_color: get_setting_color(&settings, "background color", default_settings.background_color),
+
+        continue_details: ContinueDetails {
+            last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),
+        },
+
+    })
 }
 
 
@@ -74,7 +193,7 @@ pub fn get_setting_defaultless<T> (settings: &Map<String, Value>, full_key: &str
         Some(v) => Some(v),
         None => {
             println!("Warning: setting \"{}\" needs to be of type {}, but was found to be of type {}", full_key, value_type_name, fns::get_value_type_name(found_value));
-            return None;
+            None
         }
     }
 
@@ -98,9 +217,9 @@ pub fn get_setting_string_array (settings: &Map<String, Value>, full_key: &str, 
 
 
 
-pub fn get_setting_color (settings: &Map<String, Value>, full_key: &str, default_value: u32) -> u32 {
+pub fn get_setting_color (settings: &Map<String, Value>, full_key: &str, default_value: Color) -> Color {
     match get_setting_defaultless(settings, full_key, Value::as_u64, "U64") {
-        Some(value) => fns::u64_to_color(value).unwrap_or(default_value),
+        Some(value) => fns::u64_to_color_rgb(value).unwrap_or(default_value),
         None => default_value
     }
 }

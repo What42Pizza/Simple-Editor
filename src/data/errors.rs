@@ -28,7 +28,7 @@ impl<T> CustomOptionFns<T> for Option<T> {
     fn none_err_lazy (&self, error_name: &str, error_details_fn: impl FnOnce() -> String) -> Result<&T> {
         match self {
             Some(v) => Ok(v),
-            None => err(error_name, &*error_details_fn()),
+            None => err(error_name, &error_details_fn()),
         }
     }
 
@@ -201,6 +201,13 @@ impl<T> Result<T> {
         }
     }
 
+    pub fn unwrap_or (self, other: impl FnOnce(Error) -> T) -> T {
+        match self {
+            Ok(v) => v,
+            Err(error) => other(error),
+        }
+    }
+
 }
 
 
@@ -258,6 +265,13 @@ impl fmt::Display for Error {
 }
 
 impl Error {
+    pub fn new (name: &str, details: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            details: vec![details.to_string()],
+            cause: None,
+        }
+    }
     fn get_details (&self) -> String {
         let mut details_string = String::from("");
         for current_detail in &self.details {
