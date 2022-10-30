@@ -10,6 +10,8 @@ use serde_hjson::{Map, Value};
 pub struct ProgramSettings {
 
     pub background_color: Color,
+    pub font_path: String,
+    pub font_size: i64,
 
     pub continue_details: ContinueDetails,
 
@@ -20,6 +22,8 @@ impl ProgramSettings {
         Self {
 
             background_color: Color::RGB(27, 33, 47),
+            font_path: String::from("JetBrainsMono-Regular.ttf"),
+            font_size: 32,
 
             continue_details: ContinueDetails {
                 last_open_files: vec!(),
@@ -145,6 +149,8 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
     Ok(ProgramSettings {
 
         background_color: get_setting_color(&settings, "background color", default_settings.background_color),
+        font_path: get_setting_lazy(&settings, "font path", |v| v.as_str().map(str::to_string), "String", || default_settings.font_path.to_string()),
+        font_size: get_setting(&settings, "font size", Value::as_i64, "i64", default_settings.font_size),
 
         continue_details: ContinueDetails {
             last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),
@@ -172,6 +178,26 @@ pub fn get_setting<T> (settings: &Map<String, Value>, full_key: &str, value_fn: 
         None => {
             println!("Warning: setting \"{}\" needs to be of type {}, but was found to be of type {}", full_key, value_type_name, fns::get_value_type_name(found_value));
             default_value
+        }
+    }
+
+}
+
+pub fn get_setting_lazy<T> (settings: &Map<String, Value>, full_key: &str, value_fn: impl FnOnce(&Value) -> Option<T>, value_type_name: &str, default_value_fn: impl FnOnce() -> T) -> T {
+
+    let found_value = match fns::get_hjson_value(settings, full_key) {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not find setting \"{}\"", full_key);
+            return default_value_fn();
+        }
+    };
+
+    match value_fn(found_value) {
+        Some(v) => v,
+        None => {
+            println!("Warning: setting \"{}\" needs to be of type {}, but was found to be of type {}", full_key, value_type_name, fns::get_value_type_name(found_value));
+            default_value_fn()
         }
     }
 

@@ -1,23 +1,32 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use sdl2::{event::Event, keyboard::Keycode};
-use std::{fs, sync::mpsc::Receiver};
+use std::{fs, thread, time::Duration};
 
 
 
-pub fn run_tasks (program_data: ProgramData, tasks_rx: Receiver<ProgramTask>) {
-    for current_task in tasks_rx {
+pub fn run_tasks (program_data: ProgramData) {
+    'outer: loop {
 
-        let success = process_task(current_task, &program_data);
-        if let Err(error) = success {
-            program_data.errors.lock().unwrap().push(error);
+        while program_data.tasks.lock().unwrap().is_empty() {
+            thread::sleep(Duration::from_millis(10));
+            if *program_data.exit.lock().unwrap() {break 'outer;}
         }
 
-        // TEMP
-        for error in program_data.errors.lock().unwrap().iter() {
-            println!("Error: {}", error);
+        'inner: loop {
+            let mut tasks = program_data.tasks.lock().unwrap();
+            let current_task = tasks.remove(0);
+            let break_at_end = tasks.is_empty();
+            drop(tasks);
+            match process_task(current_task, &program_data) {
+                Ok(_) => {}
+                Err(error) => {
+                    program_data.errors.lock().unwrap().push(error);
+                }
+            }
+            if *program_data.exit.lock().unwrap() {break 'outer;}
+            if break_at_end {break 'inner;}
         }
-        *program_data.errors.lock().unwrap() = vec!();
 
     }
 }

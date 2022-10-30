@@ -3,7 +3,7 @@ use crate::{data::{program_data::*, settings::*, errors::Result::*}, fns};
 use std::{fmt, result::Result as stdResult,
     ops::{Try, ControlFlow, FromResidual}
 };
-use sdl2::{video::WindowBuildError, IntegerOrSdlError};
+use sdl2::{video::WindowBuildError, IntegerOrSdlError, ttf::FontError, render::TextureValueError};
 
 
 
@@ -329,6 +329,26 @@ impl From<IntegerOrSdlError> for Error {
     fn from (error: IntegerOrSdlError) -> Self {
         Self {
             name: String::from("sdl2::IntegerOrSdlError"),
+            details: vec!(error.to_string()),
+            cause: None,
+        }
+    }
+}
+
+impl From<FontError> for Error {
+    fn from (error: FontError) -> Self {
+        Self {
+            name: String::from("sdl2::FontError"),
+            details: vec!(error.to_string()),
+            cause: None,
+        }
+    }
+}
+
+impl From<TextureValueError> for Error {
+    fn from (error: TextureValueError) -> Self {
+        Self {
+            name: String::from("sdl2::TextureValueError"),
             details: vec!(error.to_string()),
             cause: None,
         }

@@ -14,6 +14,7 @@ pub struct ProgramData {
     pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
     pub exit: Shared<bool>,
     pub settings: Shared<Option<ProgramSettings>>,
+    pub tasks: Shared<Vec<ProgramTask>>,
     pub errors: Shared<Vec<Error>>,
 
     pub current_file: Shared<Option<usize>>,
@@ -28,6 +29,7 @@ impl ProgramData {
             frame_count: Shared::take(0),
             exit: Shared::take(false),
             settings: Shared::take(None),
+            tasks: Shared::take(vec!()),
             errors: Shared::take(vec!()),
 
             current_file: Shared::take(None),
@@ -41,6 +43,7 @@ impl ProgramData {
             frame_count: self.frame_count.clone(),
             exit: self.exit.clone(),
             settings: self.settings.clone(),
+            tasks: self.tasks.clone(),
             errors: self.errors.clone(),
 
             current_file: self.current_file.clone(),
@@ -68,6 +71,7 @@ impl Debug for ProgramTextures<'_> {
 pub struct File {
     pub path: String,
     pub contents: Vec<String>,
+    pub scroll_amount: f64,
     pub cursors: Vec<Cursor>,
     pub selection_start: Option<(usize, usize)>,
 }
@@ -77,6 +81,7 @@ impl File {
         Self {
             path,
             contents,
+            scroll_amount: 0.,
             cursors: vec![
                 Cursor {
                     x: 0,

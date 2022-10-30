@@ -1,17 +1,16 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
-use std::{sync::mpsc::Sender};
 use sdl2::{Sdl, pixels::Color,
     image::{self, LoadTexture, InitFlag},
     render::{Canvas, TextureCreator, Texture},
-    video::{Window, WindowContext}
+    video::{Window, WindowContext}, ttf::{Sdl2TtfContext, Font}
 };
 
 
 
 
 
-pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
+pub fn init_sdl2() -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
 
     let sdl_context = sdl2::init().expect("Could not initialize sdl2");
     let _image_context = image::init(InitFlag::PNG).expect("Could not retrieve sdl image context");
@@ -31,7 +30,9 @@ pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
     canvas.clear();
     canvas.present();
 
-    (sdl_context, canvas)
+    let ttf_context = sdl2::ttf::init().expect("Could not initialize sdl2::ttf");
+
+    (sdl_context, ttf_context, canvas)
 
 }
 
@@ -39,14 +40,19 @@ pub fn init_sdl2() -> (Sdl, Canvas<Window>) {
 
 
 
-pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, tasks_tx: &Sender<ProgramTask>) -> Result<ProgramTextures<'a>> {
+pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
 
     let textures = load_textures(texture_creator)?;
-    program_data.settings = Shared::take(Some(load_settings()));
+    let settings = load_settings();
 
-    continue_session(program_data, tasks_tx)?;
+    let mut font_path = fns::get_program_dir();
+    font_path.push(&settings.font_path);
+    let font = ttf_context.load_font(font_path, settings.font_size as u16).to_custom_err()?;
 
-    Ok(textures)
+    program_data.settings = Shared::take(Some(settings));
+    continue_session(program_data)?;
+
+    Ok((font, textures))
 
 }
 
@@ -68,14 +74,16 @@ pub fn load_texture<'a> (texture_name: &str, texture_creator: &'a TextureCreator
 
 
 
-pub fn continue_session (program_data: &mut ProgramData, tasks_tx: &Sender<ProgramTask>) -> Result<()> {
+pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
 
     let settings = program_data.settings.lock().unwrap();
     let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
 
+    let mut tasks = program_data.tasks.lock().unwrap();
     for file_path in &continue_details.last_open_files {
-        let _ = tasks_tx.send(ProgramTask::LoadFile(file_path.to_string()));
+        tasks.push(ProgramTask::LoadFile(file_path.to_string()));
     }
+    drop(tasks);
 
     Ok(())
 }
