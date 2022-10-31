@@ -12,6 +12,7 @@ pub struct ProgramSettings {
     pub background_color: Color,
     pub font_path: String,
     pub font_size: i64,
+    pub font_spacing: f64,
 
     pub continue_details: ContinueDetails,
 
@@ -24,6 +25,7 @@ impl ProgramSettings {
             background_color: Color::RGB(27, 33, 47),
             font_path: String::from("JetBrainsMono-Regular.ttf"),
             font_size: 32,
+            font_spacing: 1.1,
 
             continue_details: ContinueDetails {
                 last_open_files: vec!(),
@@ -151,6 +153,7 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
         background_color: get_setting_color(&settings, "background color", default_settings.background_color),
         font_path: get_setting_lazy(&settings, "font path", |v| v.as_str().map(str::to_string), "String", || default_settings.font_path.to_string()),
         font_size: get_setting(&settings, "font size", Value::as_i64, "i64", default_settings.font_size),
+        font_spacing: get_setting(&settings, "font spacing", Value::as_f64, "f64", default_settings.font_spacing),
 
         continue_details: ContinueDetails {
             last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),

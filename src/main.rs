@@ -1,10 +1,9 @@
 // Started 10/21/22
-// Last updated 10/29/22
+// Last updated 10/31/22
 
 
 
 // SDL2 docs: https://rust-sdl2.github.io/rust-sdl2/sdl2/
-// SDL2 tff video: https://www.youtube.com/watch?v=vVJIYaX3Kjw&t=169s
 // hjson docs: https://docs.rs/serde-hjson/0.9.1/serde_hjson/
 
 
