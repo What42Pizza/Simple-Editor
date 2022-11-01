@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-derive_is_enum_variant = "0.1"
-serde = "1.0"
-serde-hjson = "0.9"
-regex = "1.6"
+derive_is_enum_variant = "0.*"
+serde = "1.*"
+serde-hjson = "0.*"
+regex = "1.*"
+fmt-derive = "0.*"
+lerp = "0.4.0"
 
 [dependencies.sdl2]
 version = "0.35"

@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 10/31/22
+// Last updated 11/01/22
 
 
 
@@ -20,7 +20,7 @@
 mod render;
 mod init;
 mod finish;
-mod task_fns;
+mod tasks_mod;
 mod data;
 mod fns;
 
@@ -31,7 +31,7 @@ extern crate derive_is_enum_variant;
 
 
 
-use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, task_fns::tasks as tasks};
+use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, tasks_mod::tasks as tasks};
 
 use std::{thread};
 use sdl2::{EventPump};
@@ -92,4 +92,15 @@ fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
     }
     drop(tasks);
 
+    add_frame_update_task(program_data);
+
+}
+
+
+
+fn add_frame_update_task (program_data: &mut ProgramData) {
+    let mut has_frame_update_task = program_data.has_frame_update_task.lock().unwrap();
+    if *has_frame_update_task {return;}
+    *has_frame_update_task = true;
+    program_data.tasks.lock().unwrap().push(ProgramTask::DoFrameUpdates);
 }

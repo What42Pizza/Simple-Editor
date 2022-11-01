@@ -1,7 +1,7 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use sdl2::{event::Event, keyboard::Keycode};
-use std::{fs, thread, time::Duration};
+use std::{fs, thread, time::{Duration, Instant}};
 
 
 
@@ -36,10 +36,30 @@ pub fn run_tasks (program_data: ProgramData) {
 pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> Result<()> {
 
     match current_task {
+        ProgramTask::DoFrameUpdates => do_frame_updates(program_data)?,
         ProgramTask::LoadFile(file_path) => load_file(&file_path, program_data)?,
         ProgramTask::SaveFile(file_path) => save_file(&file_path, program_data)?,
         ProgramTask::CloseFile(file_path) => close_file(&file_path, program_data)?,
         ProgramTask::HandleEvent(event) => handle_event(event, program_data)?,
+    }
+
+    Ok(())
+}
+
+
+
+
+
+pub fn do_frame_updates (program_data: &ProgramData) -> Result<()> {
+
+    let current_time = Instant::now();
+    let mut last_frame_updates_time = program_data.last_frame_updates_time.lock().unwrap();
+    let dt = current_time.duration_since(*last_frame_updates_time);
+    *last_frame_updates_time = current_time;
+
+    let mut frame_update_fns = program_data.frame_update_fns.lock().unwrap();
+    while !frame_update_fns.is_empty() {
+        frame_update_fns.pop().unwrap()(program_data, &dt);
     }
 
     Ok(())

@@ -1,6 +1,7 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
+use lerp::Lerp;
 use regex::Regex;
 use sdl2::{render::Texture, rect::Rect, pixels::Color};
 use serde_hjson::{Value, Map};
@@ -73,6 +74,17 @@ pub fn u64_to_color_rgb (input: u64) -> Option<Color> {
 
 pub fn get_byte (input: u64, byte_num: u8) -> u8 {
     ((input & (0xFF << (byte_num * 8))) >> (byte_num * 8)) as u8
+}
+
+
+
+pub fn blend_colors (color1: Color, color2: Color, blend_amount: f64) -> Color {
+    let (r1, g1, b1) = color1.rgb();
+    let (r2, g2, b2) = color2.rgb();
+    let r = (r1 as f64).lerp(r2 as f64, blend_amount) as u8;
+    let g = (g1 as f64).lerp(g2 as f64, blend_amount) as u8;
+    let b = (b1 as f64).lerp(b2 as f64, blend_amount) as u8;
+    Color::RGB(r, g, b)
 }
 
 
