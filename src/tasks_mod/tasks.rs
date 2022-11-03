@@ -1,7 +1,9 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
+use std::{fs, thread,
+    time::{Duration, Instant}
+};
 use sdl2::{event::Event, keyboard::Keycode};
-use std::{fs, thread, time::{Duration, Instant}};
 
 
 

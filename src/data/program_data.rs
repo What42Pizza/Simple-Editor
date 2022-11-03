@@ -19,6 +19,7 @@ pub struct ProgramData {
     pub settings: Shared<Option<ProgramSettings>>,
     pub errors: Shared<Vec<Error>>,
     pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
+    pub start_instant: Instant,
     pub exit: Shared<bool>,
     
     pub tasks: Shared<Vec<ProgramTask>>,
@@ -26,8 +27,9 @@ pub struct ProgramData {
     pub has_frame_update_task: Shared<bool>,
     pub last_frame_updates_time: Shared<Instant>,
 
-    pub current_file: Shared<Option<usize>>,
     pub files: Shared<Vec<File>>,
+    pub current_file: Shared<Option<usize>>,
+    pub cursor_place_instant: Shared<Instant>,
 
 }
 
@@ -38,6 +40,7 @@ impl ProgramData {
             settings: Shared::take(None),
             errors: Shared::take(vec!()),
             frame_count: Shared::take(0),
+            start_instant: Instant::now(),
             exit: Shared::take(false),
             
             tasks: Shared::take(vec!()),
@@ -45,8 +48,9 @@ impl ProgramData {
             has_frame_update_task: Shared::take(false),
             last_frame_updates_time: Shared::take(Instant::now()),
 
-            current_file: Shared::take(None),
             files: Shared::take(vec!()),
+            current_file: Shared::take(None),
+            cursor_place_instant: Shared::take(Instant::now()),
 
         }
     }
@@ -56,6 +60,7 @@ impl ProgramData {
             settings: self.settings.clone(),
             errors: self.errors.clone(),
             frame_count: self.frame_count.clone(),
+            start_instant: self.start_instant.clone(),
             exit: self.exit.clone(),
             
             tasks: self.tasks.clone(),
@@ -63,8 +68,9 @@ impl ProgramData {
             has_frame_update_task: self.has_frame_update_task.clone(),
             last_frame_updates_time: self.last_frame_updates_time.clone(),
 
-            current_file: self.current_file.clone(),
             files: self.files.clone(),
+            current_file: self.current_file.clone(),
+            cursor_place_instant: self.cursor_place_instant.clone(),
 
         }
     }
@@ -74,7 +80,7 @@ impl ProgramData {
 
 #[derive(fmt_derive::Debug)]
 pub struct ProgramTextures<'a> {
-    pub ground: Texture<'a>,
+    pub ascii_chars: [Texture<'a>; 256]
 }
 
 
@@ -82,8 +88,9 @@ pub struct ProgramTextures<'a> {
 #[derive(Debug)]
 pub struct File {
     pub path: String,
-    pub contents: Vec<String>,
-    pub scroll_amount: f64,
+    pub contents: Vec<Vec<char>>,
+    pub scroll_x: f64,
+    pub scroll_y: f64,
     pub cursors: Vec<Cursor>,
     pub selection_start: Option<(usize, usize)>,
 }
@@ -92,8 +99,9 @@ impl File {
     pub fn new (path: String, contents: Vec<String>) -> Self {
         Self {
             path,
-            contents,
-            scroll_amount: 0.,
+            contents: contents.iter().map(|s| s.chars().collect()).collect(),
+            scroll_x: 0.,
+            scroll_y: 0.,
             cursors: vec![
                 Cursor {
                     x: 0,

@@ -201,6 +201,13 @@ impl<T> Result<T> {
         }
     }
 
+    pub fn unwrap (self) -> T {
+        match self {
+            Ok(v) => v,
+            Err(error) => panic!("tried to unwrap err variant (error: {error})"),
+        }
+    }
+
     pub fn unwrap_or (self, other: impl FnOnce(Error) -> T) -> T {
         match self {
             Ok(v) => v,
@@ -237,6 +244,30 @@ impl<T> FromResidual<Error> for stdResult<T, Error> {
         Self::Err (error)
     }
 }
+
+
+
+/*
+impl<T> Try for &Result<T> {
+    type Output = T;
+    type Residual = Error;
+    fn from_output(value: <Self as Try>::Output) -> Self {
+        &Result::Ok(value)
+    }
+    fn branch(self) -> ControlFlow<<Self as Try>::Residual, <Self as Try>::Output> {
+        match self {
+            &Result::Ok (v) => ControlFlow::Continue(v),
+            &Result::Err (e) => ControlFlow::Break(e),
+        }
+    }
+}
+
+impl<T> FromResidual<Error> for &Result<T> {
+    fn from_residual(error: Error) -> Self {
+        &Result::Err (error)
+    }
+}
+*/
 
 
 

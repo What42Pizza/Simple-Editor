@@ -10,9 +10,15 @@ use serde_hjson::{Map, Value};
 pub struct ProgramSettings {
 
     pub background_color: Color,
+
     pub font_path: String,
     pub font_size: i64,
     pub font_spacing: f64,
+
+    pub cursor_flashing_speed: f64,
+    pub cursor_width: f64, // relative to screen width
+    pub cursor_height: f64, // relative to font height
+    pub cursor_color: Color,
 
     pub continue_details: ContinueDetails,
 
@@ -23,9 +29,15 @@ impl ProgramSettings {
         Self {
 
             background_color: Color::RGB(27, 33, 47),
-            font_path: String::from("JetBrainsMono-Regular.ttf"),
+
+            font_path: String::from("JetBrainsMono-Regular_0.ttf"),
             font_size: 32,
             font_spacing: 1.1,
+
+            cursor_flashing_speed: 0.75,
+            cursor_width: 1./500.,
+            cursor_height: 1.1,
+            cursor_color: Color::RGB(255, 255, 255),
 
             continue_details: ContinueDetails {
                 last_open_files: vec!(),
@@ -151,9 +163,15 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
     Ok(ProgramSettings {
 
         background_color: get_setting_color(&settings, "background color", default_settings.background_color),
+
         font_path: get_setting_lazy(&settings, "font path", |v| v.as_str().map(str::to_string), "String", || default_settings.font_path.to_string()),
         font_size: get_setting(&settings, "font size", Value::as_i64, "i64", default_settings.font_size),
         font_spacing: get_setting(&settings, "font spacing", Value::as_f64, "f64", default_settings.font_spacing),
+
+        cursor_flashing_speed: get_setting(&settings, "cursor flashing speed", Value::as_f64, "f64", default_settings.cursor_flashing_speed),
+        cursor_width: get_setting(&settings, "cursor width", Value::as_f64, "f64", default_settings.cursor_width),
+        cursor_height: get_setting(&settings, "cursor height", Value::as_f64, "f64", default_settings.cursor_height),
+        cursor_color: get_setting_color(&settings, "cursor color", default_settings.cursor_color),
 
         continue_details: ContinueDetails {
             last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),

@@ -1,9 +1,11 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
+use std::{result::Result as stdResult};
 use sdl2::{Sdl, pixels::Color,
     image::{self, LoadTexture, InitFlag},
     render::{Canvas, TextureCreator, Texture},
-    video::{Window, WindowContext}, ttf::{Sdl2TtfContext, Font}
+    video::{Window, WindowContext},
+    ttf::{Sdl2TtfContext, Font}, surface::Surface
 };
 
 
@@ -41,13 +43,14 @@ pub fn init_sdl2() -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
 
 
 pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
-
-    let textures = load_textures(texture_creator)?;
+    
     let settings = load_settings();
 
     let mut font_path = fns::get_program_dir();
     font_path.push(&settings.font_path);
     let font = ttf_context.load_font(font_path, settings.font_size as u16).to_custom_err()?;
+
+    let textures = load_textures(&font, texture_creator)?;
 
     program_data.settings = Shared::take(Some(settings));
     continue_session(program_data)?;
@@ -58,16 +61,44 @@ pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &
 
 
 
-pub fn load_textures (texture_creator: &TextureCreator<WindowContext>) -> Result<ProgramTextures<'_>> {
+pub fn load_textures<'a> (font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>> {
+
+    // render chars
+    let mut ascii_chars = vec!();
+    for i in (0..256).rev() {
+        ascii_chars.push(render_char(char::from_u32(i).unwrap(), font, texture_creator)?);
+    }
+    let ascii_chars: [Texture; 256] = array_init::array_init(|i| ascii_chars.pop().unwrap());
+
     Ok(ProgramTextures {
-        ground: load_texture("assets/ground.png", texture_creator)?,
+        ascii_chars,
     })
 }
+
+
 
 pub fn load_texture<'a> (texture_name: &str, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>> {
     Ok(texture_creator.load_texture(texture_name)
         .err_details_lazy(|| ("  Texture: \"".to_string() + texture_name + "\""))?
     )
+}
+
+
+
+pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>> {
+    if char as u32 == 0 {
+        return fns::get_empty_texture(texture_creator);
+    }
+    let mut char_surface = match font
+        .render(&char.to_string())
+        .blended(Color::RGB(255, 255, 255))
+    {
+        stdResult::Ok(v) => v,
+        stdResult::Err(error) => return fns::get_empty_texture(texture_creator)
+    };
+    texture_creator
+        .create_texture_from_surface(char_surface)
+        .to_custom_err()
 }
 
 
