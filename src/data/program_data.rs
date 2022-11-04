@@ -23,6 +23,8 @@ pub struct ProgramData {
     pub exit: Shared<bool>,
     
     pub tasks: Shared<Vec<ProgramTask>>,
+    pub tasks_paused: Shared<bool>,
+    pub tasks_ongoing: Shared<bool>,
     pub frame_update_fns: Shared<Vec<FrameUpdateFns>>,
     pub has_frame_update_task: Shared<bool>,
     pub last_frame_updates_time: Shared<Instant>,
@@ -44,6 +46,8 @@ impl ProgramData {
             exit: Shared::take(false),
             
             tasks: Shared::take(vec!()),
+            tasks_paused: Shared::take(false),
+            tasks_ongoing: Shared::take(false),
             frame_update_fns: Shared::take(vec!()),
             has_frame_update_task: Shared::take(false),
             last_frame_updates_time: Shared::take(Instant::now()),
@@ -60,10 +64,12 @@ impl ProgramData {
             settings: self.settings.clone(),
             errors: self.errors.clone(),
             frame_count: self.frame_count.clone(),
-            start_instant: self.start_instant.clone(),
+            start_instant: self.start_instant,
             exit: self.exit.clone(),
             
             tasks: self.tasks.clone(),
+            tasks_paused: self.tasks_paused.clone(),
+            tasks_ongoing: self.tasks_ongoing.clone(),
             frame_update_fns: self.frame_update_fns.clone(),
             has_frame_update_task: self.has_frame_update_task.clone(),
             last_frame_updates_time: self.last_frame_updates_time.clone(),

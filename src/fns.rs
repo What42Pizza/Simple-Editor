@@ -1,7 +1,9 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
 use std::{path::PathBuf, fs::OpenOptions};
-use sdl2::{render::{Texture, TextureCreator}, rect::Rect, pixels::Color, surface::Surface, video::WindowContext};
+use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
+    render::{Texture, TextureCreator}
+};
 use serde_hjson::{Value, Map};
 use regex::Regex;
 use lerp::Lerp;
@@ -89,7 +91,7 @@ pub fn blend_colors (color1: Color, color2: Color, blend_amount: f64) -> Color {
 
 
 
-pub fn get_empty_texture<'a> (texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>> {
+pub fn get_empty_texture (texture_creator: &TextureCreator<WindowContext>) -> Result<Texture<'_>> {
     texture_creator
         .create_texture_from_surface(Surface::new(1, 1, sdl2::pixels::PixelFormatEnum::ARGB8888).unwrap())
         .to_custom_err()

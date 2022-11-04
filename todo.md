@@ -2,7 +2,6 @@
 
 Redo text rendering
     Pre-render chars
-        Pre-render ascii chars (to vec)
         Pre-render non-ascii chars (to hashmap)
     Redo render function
         Create 'render text' function

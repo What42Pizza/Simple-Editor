@@ -10,11 +10,15 @@ use sdl2::{event::Event, keyboard::Keycode};
 pub fn run_tasks (program_data: ProgramData) {
     'outer: loop {
 
-        while program_data.tasks.lock().unwrap().is_empty() {
+        // wait for tasks
+        *program_data.tasks_ongoing.lock().unwrap() = false;
+        while program_data.tasks.lock().unwrap().is_empty() || *program_data.tasks_paused.lock().unwrap() {
             thread::sleep(Duration::from_millis(10));
             if *program_data.exit.lock().unwrap() {break 'outer;}
         }
+        *program_data.tasks_ongoing.lock().unwrap() = true;
 
+        // run tasks
         'inner: loop {
             let mut tasks = program_data.tasks.lock().unwrap();
             let current_task = tasks.remove(0);
@@ -27,7 +31,7 @@ pub fn run_tasks (program_data: ProgramData) {
                 }
             }
             if *program_data.exit.lock().unwrap() {break 'outer;}
-            if break_at_end {break 'inner;}
+            if break_at_end || *program_data.tasks_paused.lock().unwrap() {break 'inner;}
         }
 
     }

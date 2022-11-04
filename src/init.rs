@@ -1,11 +1,11 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
 use std::{result::Result as stdResult};
-use sdl2::{Sdl, pixels::Color,
+use sdl2::{Sdl, pixels::Color, surface::Surface,
     image::{self, LoadTexture, InitFlag},
     render::{Canvas, TextureCreator, Texture},
     video::{Window, WindowContext},
-    ttf::{Sdl2TtfContext, Font}, surface::Surface
+    ttf::{Sdl2TtfContext, Font}
 };
 
 

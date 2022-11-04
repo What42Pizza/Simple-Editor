@@ -12,6 +12,9 @@
 #![allow(unused)]
 #![warn(unused_must_use)]
 
+// clippy
+#![allow(clippy::too_many_arguments)]
+
 // nightly features
 #![feature(try_trait_v2)]
 
@@ -34,7 +37,7 @@ extern crate derive_is_enum_variant;
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, tasks_mod::tasks as tasks};
 
 use std::{thread};
-use sdl2::{EventPump};
+use sdl2::{EventPump, pixels::Color};
 
 
 
@@ -61,7 +64,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     let texture_creator = canvas.texture_creator();
 
     // main init
-    let (font, tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
+    let (font, mut tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
     let thread_program_data_mutex = program_data.clone();
     let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex));
 
@@ -70,7 +73,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
         update(program_data, &mut event_pump);
 
-        render::render(&mut canvas, program_data, &tetuxres, &texture_creator, &font)?;
+        render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;
 
     }
 

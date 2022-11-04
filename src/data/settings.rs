@@ -30,7 +30,7 @@ impl ProgramSettings {
 
             background_color: Color::RGB(27, 33, 47),
 
-            font_path: String::from("JetBrainsMono-Regular_0.ttf"),
+            font_path: String::from(""),
             font_size: 32,
             font_spacing: 1.1,
 
@@ -114,7 +114,7 @@ fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> 
 pub fn load_raw_settings() -> Result<Option<String>> {
 
     let mut settings_path = fns::get_program_dir();
-    settings_path.push("settings.txt");
+    settings_path.push("settings.hjson");
     if !fns::get_file_exists(&settings_path)
         .err_details("Could not query location of settings file")
         .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?

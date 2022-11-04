@@ -1,6 +1,6 @@
 use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
 
-use std::sync::MutexGuard;
+use std::{sync::MutexGuard, thread, time::Duration};
 use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
     render::{WindowCanvas, TextureCreator, Texture},
     rect::{Rect, Point}
@@ -8,17 +8,27 @@ use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
 
 
 
-pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
+pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
+
+    // pause tasks
+    *program_data.tasks_paused.lock().unwrap() = true;
+    while *program_data.tasks_ongoing.lock().unwrap() {
+        thread::sleep(Duration::from_millis(1));
+    }
+
+    // render (and resume tasks)
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
+    *program_data.tasks_paused.lock().unwrap() = false;
     canvas.present();
     Ok(())
+
 }
 
 
 
 
 
-pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
+pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
 
     // get data
     let settings_mutex = program_data.settings.lock().unwrap();
@@ -47,7 +57,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
     let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
     let padding = div(width, 80.) as i32;
     for (i, current_line) in current_file.contents.iter().enumerate() {
-        render_text(current_line, padding, i as i32 * text_spacing as i32 + padding, &text_section, font, canvas, texture_creator)?;
+        render_text(current_line, padding, i as i32 * text_spacing as i32 + padding, &text_section, font, canvas, texture_creator, textures, settings)?;
     }
 
 
@@ -99,22 +109,18 @@ pub fn get_file_to_render<'a> (program_data: &ProgramData, files: &'a MutexGuard
 
 
 
-pub fn render_text (text: &Vec<char>, x: i32, y: i32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>) -> Result<()> {
-
-    /*
-    let text_surface = font
-        .render(text)
-        .blended(Color::RGB(255, 255, 255))
-        .to_custom_err()?;
-    let text_texture = texture_creator
-        .create_texture_from_surface(text_surface)
-        .to_custom_err()?;
-    let (width, height) = fns::get_texture_size(&text_texture);
-
-    render_in_section(&text_texture, x, y, section, canvas)
-    */
+pub fn render_text (text: &[char], x: i32, y: i32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
+    let text_width = settings.font_size as i32 * 3 / 4;
+    for (i, char) in text.iter().enumerate() {
+        let char = *char as usize;
+        if char < 256 {
+            let char_texture = &textures.ascii_chars[char];
+            render_in_section(char_texture, x + i as i32 * text_width, y, section, canvas)?;
+        } else {
+            return err("WIPChar", &("cannot render char ".to_string() + &char.to_string()));
+        }
+    }
     Ok(())
-
 }
 
 
@@ -160,7 +166,7 @@ pub fn render_in_section (texture: &Texture, lx: i32, ly: i32, section: &Rect, c
     let src_lx = shown_lx - lx;
     let src_ly = shown_ly - ly;
     let src_hx = shown_hx - hx + width as i32;
-    let src_hy = shown_hy - hy + width as i32;
+    let src_hy = shown_hy - hy + height as i32;
 
     let src = Rect::new(src_lx, src_ly, (src_hx - src_lx) as u32, (src_hy - src_ly) as u32);
     let dest = Rect::new(shown_lx + section_lx, shown_ly + section_ly, (shown_hx - shown_lx) as u32, (shown_hy - shown_ly) as u32);
