@@ -34,7 +34,7 @@ impl ProgramSettings {
             font_size: 32,
             font_spacing: 1.1,
 
-            cursor_flashing_speed: 0.75,
+            cursor_flashing_speed: 1.0,
             cursor_width: 1./500.,
             cursor_height: 1.1,
             cursor_color: Color::RGB(255, 255, 255),

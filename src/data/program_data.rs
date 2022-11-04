@@ -122,9 +122,9 @@ impl File {
 
 #[derive(Debug)]
 pub struct Cursor {
-    pub x: usize,
-    pub y: usize,
-    pub wanted_x: usize,
+    pub x: u32,
+    pub y: u32,
+    pub wanted_x: u32,
 }
 
 

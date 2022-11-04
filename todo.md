@@ -3,12 +3,10 @@
 Redo text rendering
     Pre-render chars
         Pre-render non-ascii chars (to hashmap)
-    Redo render function
-        Create 'render text' function
-        Create 'get char position' function
 Handle tasks
     Handle events
 Render ui
     Add ui data to program_data
-Save settings on close
+Save on close
+    Save settings
     Save continue details

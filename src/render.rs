@@ -54,10 +54,9 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
     };
 
     let text_section = Rect::new(0, buttons_bottom_y as i32, width, height - buttons_bottom_y);
-    let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
-    let padding = div(width, 80.) as i32;
+    //let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
     for (i, current_line) in current_file.contents.iter().enumerate() {
-        render_text(current_line, padding, i as i32 * text_spacing as i32 + padding, &text_section, font, canvas, texture_creator, textures, settings)?;
+        render_file_text(current_line, i as u32, &text_section, font, canvas, texture_creator, textures, settings)?;
     }
 
 
@@ -68,9 +67,9 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
     if time_since_cursor_place % cursor_flashing_speed < cursor_flashing_speed / 2. {
         let cursor_width = (width as f64 * settings.cursor_width) as u32;
         let cursor_height = (settings.font_size as f64 * settings.cursor_height) as u32;
-        let cursor_color = settings.cursor_color;
+        canvas.set_draw_color(settings.cursor_color);
         for cursor in &current_file.cursors {
-            render_cursor(cursor, canvas, &text_section, cursor_width, cursor_height, cursor_color, text_spacing);
+            render_cursor(cursor, canvas, &text_section, cursor_width, cursor_height, settings)?;
         }
     }
 
@@ -109,13 +108,16 @@ pub fn get_file_to_render<'a> (program_data: &ProgramData, files: &'a MutexGuard
 
 
 
-pub fn render_text (text: &[char], x: i32, y: i32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
+pub fn render_file_text (text: &[char], char_y: u32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
     let text_width = settings.font_size as i32 * 3 / 4;
     for (i, char) in text.iter().enumerate() {
         let char = *char as usize;
         if char < 256 {
             let char_texture = &textures.ascii_chars[char];
-            render_in_section(char_texture, x + i as i32 * text_width, y, section, canvas)?;
+            let (x, y) = get_char_position(i as u32, char_y, section, settings);
+            let (width, height) = fns::get_texture_size(char_texture);
+            let (src, dest) = clamp_to_section(&Rect::new(x, y, width, height), section);
+            canvas.copy(char_texture, Some(src), dest).to_custom_err()?;
         } else {
             return err("WIPChar", &("cannot render char ".to_string() + &char.to_string()));
         }
@@ -125,39 +127,35 @@ pub fn render_text (text: &[char], x: i32, y: i32, section: &Rect, font: &Font, 
 
 
 
-pub fn render_cursor (cursor: &Cursor, canvas: &mut WindowCanvas, text_section: &Rect, cursor_wdith: u32, cursor_height: u32, cursor_color: Color, text_spacing: u32) -> Result<()> {
-
-    //canvas.draw_rect()
-    Ok(())
-
-}
-
-
-
-pub fn get_cursor_screen_position (cursor: &Cursor, text_section: &Rect) -> (u32, u32) {
-
-    (0, 0)
+pub fn render_cursor (cursor: &Cursor, canvas: &mut WindowCanvas, section: &Rect, cursor_width: u32, cursor_height: u32, settings: &ProgramSettings) -> Result<()> {
+    let (cursor_x, cursor_y) = get_char_position(cursor.x, cursor.y, section, settings);
+    let y_offset = (settings.font_size * 3 / 32) as i32;
+    let cursor_rect = Rect::new(cursor_x, cursor_y + y_offset, cursor_width, cursor_height);
+    canvas.draw_rect(clamp_to_section(&cursor_rect, section).1).to_custom_err()
 }
 
 
 
 
 
-pub fn render_in_section (texture: &Texture, lx: i32, ly: i32, section: &Rect, canvas: &mut WindowCanvas) -> Result<()> {
-    let (width, height) = fns::get_texture_size(texture);
+pub fn get_char_position (char_x: u32, char_y: u32, section: &Rect, settings: &ProgramSettings) -> (i32, i32) {
+    let padding = div(section.width(), 80.) as i32;
+    let char_height = settings.font_size as u32;
+    let char_width = char_height * 3 / 4;
+    let char_spacing = (char_height as f64 * settings.font_spacing) as u32;
+    ((char_x * char_width) as i32 + padding, (char_y * char_spacing) as i32 + padding)
+}
+
+
+
+
+
+pub fn clamp_to_section (rect: &Rect, section: &Rect) -> (Rect, Rect) {
+    let (lx, ly) = (rect.x, rect.y);
+    let (width, height) = (rect.width(), rect.height());
     let (hx, hy) = (lx + width as i32, ly + height as i32);
     let (section_lx, section_ly) = (section.x(), section.y());
     let (section_width, section_height) = (section.width(), section.height());
-
-    /*
-    // probably not needed?
-    if
-        (hx < 0) || (lx > section_width as i32) ||
-        (hy < 0) || (ly > section_height as i32)
-    {
-        return Ok(());
-    }
-    */
 
     let shown_lx = lx.max(0);
     let shown_ly = ly.max(0);
@@ -170,7 +168,7 @@ pub fn render_in_section (texture: &Texture, lx: i32, ly: i32, section: &Rect, c
 
     let src = Rect::new(src_lx, src_ly, (src_hx - src_lx) as u32, (src_hy - src_ly) as u32);
     let dest = Rect::new(shown_lx + section_lx, shown_ly + section_ly, (shown_hx - shown_lx) as u32, (shown_hy - shown_ly) as u32);
-    canvas.copy(texture, Some(src), dest).to_custom_err()
+    (src, dest)
 
 }
 
