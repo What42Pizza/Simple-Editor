@@ -1,4 +1,5 @@
-use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
+use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
+use crate::tasks_mod::events;
 
 use std::{fs, thread,
     time::{Duration, Instant}
@@ -46,7 +47,7 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
         ProgramTask::LoadFile(file_path) => load_file(&file_path, program_data)?,
         ProgramTask::SaveFile(file_path) => save_file(&file_path, program_data)?,
         ProgramTask::CloseFile(file_path) => close_file(&file_path, program_data)?,
-        ProgramTask::HandleEvent(event) => handle_event(event, program_data)?,
+        ProgramTask::HandleEvent(event) => events::handle_event(event, program_data)?,
     }
 
     Ok(())
@@ -62,6 +63,7 @@ pub fn do_frame_updates (program_data: &ProgramData) -> Result<()> {
     let mut last_frame_updates_time = program_data.last_frame_updates_time.lock().unwrap();
     let dt = current_time.duration_since(*last_frame_updates_time);
     *last_frame_updates_time = current_time;
+    drop(last_frame_updates_time);
 
     let mut frame_update_fns = program_data.frame_update_fns.lock().unwrap();
     while !frame_update_fns.is_empty() {
@@ -82,9 +84,11 @@ pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
     let contents = fns::split_lines(&contents);
     program_data.files.lock().unwrap().push(File::new(file_path.to_string(), contents));
 
-    if program_data.current_file.lock().unwrap().is_none() {
-        *program_data.current_file.lock().unwrap() = Some(0);
+    let mut curent_file = program_data.current_file_num.lock().unwrap();
+    if curent_file.is_none() {
+        *curent_file = Some(0);
     }
+    drop(curent_file);
 
     println!("loaded file {}", file_path);
     Ok(())
@@ -101,19 +105,5 @@ pub fn save_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
 
 pub fn close_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
     println!("wip: close file {}", file_path);
-    Ok(())
-}
-
-
-
-pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
-    match event {
-        Event::Quit {..} |
-        Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-            *program_data.exit.lock().unwrap() = true;
-            return Ok(());
-        },
-        _ => {}
-    }
     Ok(())
 }

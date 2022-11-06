@@ -1,6 +1,6 @@
-use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}};
+use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}};
 
-use std::{path::PathBuf, fs::OpenOptions};
+use std::{path::PathBuf, fs::OpenOptions, sync::MutexGuard};
 use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
     render::{Texture, TextureCreator}
 };
@@ -130,5 +130,31 @@ pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, full_key: &
     }
 
     current_object.get(keys[keys.len()-1])
+
+}
+
+
+
+
+
+pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a mut MutexGuard<Vec<File>>) -> Result<Option<&'a mut File>> {
+
+    // select file
+    let current_file_num = program_data.current_file_num.lock().unwrap();
+    if current_file_num.is_none() {return Ok(None);}
+    let current_file = current_file_num.unwrap();
+    drop(current_file_num);
+
+    // get contents
+    if current_file >= files.len() {
+        let error_details = match files.len() {
+            0=> "Current file num is ".to_string() + &current_file.to_string() + " but there no files open",
+            1 => "Current file num is ".to_string() + &current_file.to_string() + " but there is only 1 file open",
+            _ => "Current file num is ".to_string() + &current_file.to_string() + " but there are only " + &files.len().to_string() + " files open",
+        };
+        return err("InvalidFileNum", &error_details);
+    }
+
+    Ok(Some(&mut files[current_file]))
 
 }

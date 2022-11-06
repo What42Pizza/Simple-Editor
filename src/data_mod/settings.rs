@@ -1,4 +1,4 @@
-use crate::{data::{program_data::*, errors::*, errors::Result::*}, fns};
+use crate::{data_mod::{program_data::*, errors::*, errors::Result::*}, fns};
 
 use std::fs;
 use sdl2::pixels::Color;

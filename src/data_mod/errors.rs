@@ -1,4 +1,4 @@
-use crate::{data::{program_data::*, settings::*, errors::Result::*}, fns};
+use crate::{data_mod::{program_data::*, settings::*, errors::Result::*}, fns};
 
 use std::{fmt, result::Result as stdResult,
     ops::{Try, ControlFlow, FromResidual}

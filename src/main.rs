@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/03/22
+// Last updated 11/06/22
 
 
 
@@ -24,7 +24,7 @@ mod render;
 mod init;
 mod finish;
 mod tasks_mod;
-mod data;
+mod data_mod;
 mod fns;
 
 
@@ -34,7 +34,8 @@ extern crate derive_is_enum_variant;
 
 
 
-use crate::{data::{program_data::*, settings::*, errors::*, errors::Result::*}, tasks_mod::tasks as tasks};
+use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}};
+use crate::tasks_mod::tasks as tasks;
 
 use std::{thread};
 use sdl2::{EventPump, pixels::Color};
@@ -70,11 +71,8 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     // main loop
     while !*program_data.exit.lock().unwrap() {
-
         update(program_data, &mut event_pump);
-
         render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;
-
     }
 
     finish::finish(program_data, task_thread)?;

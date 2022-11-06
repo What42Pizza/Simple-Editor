@@ -1,4 +1,4 @@
-use crate::{data::{settings::*, errors::*, errors::Result::*}, fns};
+use crate::{data_mod::{settings::*, errors::*, errors::Result::*}, fns};
 
 use std::{
     fmt::{self, Debug},
@@ -21,6 +21,8 @@ pub struct ProgramData {
     pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
     pub start_instant: Instant,
     pub exit: Shared<bool>,
+
+    pub keys_pressed: Shared<KeysPressed>,
     
     pub tasks: Shared<Vec<ProgramTask>>,
     pub tasks_paused: Shared<bool>,
@@ -30,7 +32,7 @@ pub struct ProgramData {
     pub last_frame_updates_time: Shared<Instant>,
 
     pub files: Shared<Vec<File>>,
-    pub current_file: Shared<Option<usize>>,
+    pub current_file_num: Shared<Option<usize>>,
     pub cursor_place_instant: Shared<Instant>,
 
 }
@@ -44,6 +46,8 @@ impl ProgramData {
             frame_count: Shared::take(0),
             start_instant: Instant::now(),
             exit: Shared::take(false),
+
+            keys_pressed: Shared::take(KeysPressed::new()),
             
             tasks: Shared::take(vec!()),
             tasks_paused: Shared::take(false),
@@ -53,7 +57,7 @@ impl ProgramData {
             last_frame_updates_time: Shared::take(Instant::now()),
 
             files: Shared::take(vec!()),
-            current_file: Shared::take(None),
+            current_file_num: Shared::take(None),
             cursor_place_instant: Shared::take(Instant::now()),
 
         }
@@ -66,6 +70,8 @@ impl ProgramData {
             frame_count: self.frame_count.clone(),
             start_instant: self.start_instant,
             exit: self.exit.clone(),
+
+            keys_pressed: self.keys_pressed.clone(),
             
             tasks: self.tasks.clone(),
             tasks_paused: self.tasks_paused.clone(),
@@ -75,7 +81,7 @@ impl ProgramData {
             last_frame_updates_time: self.last_frame_updates_time.clone(),
 
             files: self.files.clone(),
-            current_file: self.current_file.clone(),
+            current_file_num: self.current_file_num.clone(),
             cursor_place_instant: self.cursor_place_instant.clone(),
 
         }
@@ -84,10 +90,14 @@ impl ProgramData {
 
 
 
+
+
 #[derive(fmt_derive::Debug)]
 pub struct ProgramTextures<'a> {
     pub ascii_chars: [Texture<'a>; 256]
 }
+
+
 
 
 
@@ -111,7 +121,7 @@ impl File {
             cursors: vec![
                 Cursor {
                     x: 0,
-                    y: 0,
+                    y: 1,
                     wanted_x: 0,
                 }
             ],
@@ -120,11 +130,33 @@ impl File {
     }
 }
 
+
+
 #[derive(Debug)]
 pub struct Cursor {
     pub x: u32,
     pub y: u32,
     pub wanted_x: u32,
+}
+
+
+
+
+
+pub struct KeysPressed {
+    pub shift_pressed: bool,
+    pub control_pressed: bool,
+    pub alt_pressed: bool,
+}
+
+impl KeysPressed {
+    pub fn new() -> Self {
+        Self {
+            shift_pressed: false,
+            control_pressed: false,
+            alt_pressed: false,
+        }
+    }
 }
 
 
