@@ -1,7 +1,5 @@
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
-
-use std::{result::Result as stdResult};
-use sdl2::{Sdl, pixels::Color, surface::Surface,
+use crate::prelude::*;
+use sdl2::{Sdl, pixels::Color,
     image::{self, LoadTexture, InitFlag},
     render::{Canvas, TextureCreator, Texture},
     video::{Window, WindowContext},
@@ -68,7 +66,7 @@ pub fn load_textures<'a> (font: &Font, texture_creator: &'a TextureCreator<Windo
     for i in (0..256).rev() {
         ascii_chars.push(render_char(char::from_u32(i).unwrap(), font, texture_creator)?);
     }
-    let ascii_chars: [Texture; 256] = array_init::array_init(|i| ascii_chars.pop().unwrap());
+    let ascii_chars: [Texture; 256] = array_init::array_init(|_| ascii_chars.pop().unwrap());
 
     Ok(ProgramTextures {
         ascii_chars,
@@ -89,12 +87,12 @@ pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCre
     if char as u32 == 0 {
         return fns::get_empty_texture(texture_creator);
     }
-    let mut char_surface = match font
+    let char_surface = match font
         .render(&char.to_string())
         .blended(Color::RGB(255, 255, 255))
     {
         stdResult::Ok(v) => v,
-        stdResult::Err(error) => return fns::get_empty_texture(texture_creator)
+        stdResult::Err(_) => return fns::get_empty_texture(texture_creator),
     };
     texture_creator
         .create_texture_from_surface(char_surface)

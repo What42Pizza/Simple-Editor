@@ -1,7 +1,4 @@
-use std::time::Instant;
-
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
-
+use crate::prelude::*;
 use sdl2::{event::Event, keyboard::Keycode};
 
 
@@ -11,21 +8,15 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
 
         Event::Quit {..}  => {
             *program_data.exit.lock().unwrap() = true;
-            return Ok(());
+            Ok(())
         }
 
-        Event::KeyDown {keycode, repeat, .. } => {
-            match keycode {
-                Some(keycode) => handle_key_down(keycode, repeat, program_data),
-                None => Ok(())
-            }
+        Event::KeyDown {keycode: Some(keycode), repeat, .. } => {
+            handle_key_down(keycode, repeat, program_data)
         }
 
-        Event::KeyUp {keycode, repeat, .. } => {
-            match keycode {
-                Some(keycode) => handle_key_up(keycode, repeat, program_data),
-                None => Ok(())
-            }
+        Event::KeyUp {keycode: Some(keycode), repeat, .. } => {
+            handle_key_up(keycode, repeat, program_data)
         }
 
         _ => Ok(())
@@ -45,18 +36,10 @@ pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramDa
             Ok(())
         }
 
-        Keycode::Up => {
-            move_cursors(program_data, move_cursor_up)
-        }
-        Keycode::Down => {
-            move_cursors(program_data, move_cursor_down)
-        }
-        Keycode::Left => {
-            move_cursors(program_data, move_cursor_left)
-        }
-        Keycode::Right => {
-            move_cursors(program_data, move_cursor_right)
-        }
+        Keycode::Up    => move_cursors(program_data, move_cursor_up),
+        Keycode::Down  => move_cursors(program_data, move_cursor_down),
+        Keycode::Left  => move_cursors(program_data, move_cursor_left),
+        Keycode::Right => move_cursors(program_data, move_cursor_right),
 
         Keycode::LShift | Keycode::RShift => {
             program_data.keys_pressed.lock().unwrap().shift_pressed = true;
@@ -113,7 +96,7 @@ pub fn handle_esc_pressed (program_data: &ProgramData) {
 
 pub fn move_cursors (program_data: &ProgramData, move_fn: impl Fn(&mut File, usize)) -> Result<()> {
     let mut files = program_data.files.lock().unwrap();
-    let mut current_file = match fns::get_current_file(program_data, &mut files)? {
+    let current_file = match fns::get_current_file(program_data, &mut files)? {
         Some(v) => v,
         None => return Ok(()),
     };

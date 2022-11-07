@@ -1,6 +1,5 @@
-use crate::{data_mod::{program_data::*, settings::*, errors::Result::*}, fns};
-
-use std::{fmt, result::Result as stdResult,
+use crate::prelude::*;
+use std::{
     ops::{Try, ControlFlow, FromResidual}
 };
 use sdl2::{video::WindowBuildError, IntegerOrSdlError, ttf::FontError, render::TextureValueError};
@@ -244,30 +243,6 @@ impl<T> FromResidual<Error> for stdResult<T, Error> {
         Self::Err (error)
     }
 }
-
-
-
-/*
-impl<T> Try for &Result<T> {
-    type Output = T;
-    type Residual = Error;
-    fn from_output(value: <Self as Try>::Output) -> Self {
-        &Result::Ok(value)
-    }
-    fn branch(self) -> ControlFlow<<Self as Try>::Residual, <Self as Try>::Output> {
-        match self {
-            &Result::Ok (v) => ControlFlow::Continue(v),
-            &Result::Err (e) => ControlFlow::Break(e),
-        }
-    }
-}
-
-impl<T> FromResidual<Error> for &Result<T> {
-    fn from_residual(error: Error) -> Self {
-        &Result::Err (error)
-    }
-}
-*/
 
 
 

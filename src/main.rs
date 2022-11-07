@@ -20,6 +20,7 @@
 
 
 
+mod prelude;
 mod render;
 mod init;
 mod finish;
@@ -34,11 +35,8 @@ extern crate derive_is_enum_variant;
 
 
 
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}};
-use crate::tasks_mod::tasks as tasks;
-
-use std::{thread};
-use sdl2::{EventPump, pixels::Color};
+use crate::prelude::*;
+use sdl2::EventPump;
 
 
 

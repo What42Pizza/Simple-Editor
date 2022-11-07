@@ -1,10 +1,4 @@
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
-use crate::tasks_mod::events;
-
-use std::{fs, thread,
-    time::{Duration, Instant}
-};
-use sdl2::{event::Event, keyboard::Keycode};
+use crate::prelude::*;
 
 
 
@@ -47,7 +41,7 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
         ProgramTask::LoadFile(file_path) => load_file(&file_path, program_data)?,
         ProgramTask::SaveFile(file_path) => save_file(&file_path, program_data)?,
         ProgramTask::CloseFile(file_path) => close_file(&file_path, program_data)?,
-        ProgramTask::HandleEvent(event) => events::handle_event(event, program_data)?,
+        ProgramTask::HandleEvent(event) => tasks_mod::events::handle_event(event, program_data)?,
     }
 
     Ok(())

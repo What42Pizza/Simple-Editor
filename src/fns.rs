@@ -1,12 +1,8 @@
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}};
-
-use std::{path::PathBuf, fs::OpenOptions, sync::MutexGuard};
+use crate::prelude::*;
+use std::{path::PathBuf, fs::OpenOptions};
 use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
     render::{Texture, TextureCreator}
 };
-use serde_hjson::{Value, Map};
-use regex::Regex;
-use lerp::Lerp;
 
 
 

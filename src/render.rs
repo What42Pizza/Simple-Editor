@@ -1,8 +1,6 @@
-use crate::{data_mod::{program_data::*, settings::*, errors::*, errors::Result::*}, fns};
-
-use std::{sync::MutexGuard, thread, time::Duration};
+use crate::prelude::*;
 use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
-    render::{WindowCanvas, TextureCreator, Texture},
+    render::{WindowCanvas, TextureCreator},
     rect::{Rect, Point}
 };
 
@@ -79,13 +77,12 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
 
-pub fn render_file_text (text: &[char], char_y: u32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
-    let text_width = settings.font_size as i32 * 3 / 4;
+pub fn render_file_text (text: &[char], text_y: u32, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
     for (i, char) in text.iter().enumerate() {
         let char = *char as usize;
         if char < 256 {
             let char_texture = &textures.ascii_chars[char];
-            let (x, y) = get_char_position(i as u32, char_y, section, settings);
+            let (x, y) = get_char_position(i as u32, text_y, section, settings);
             let (width, height) = fns::get_texture_size(char_texture);
             let (src, dest) = clamp_to_section(&Rect::new(x, y, width, height), section);
             canvas.copy(char_texture, Some(src), dest).to_custom_err()?;

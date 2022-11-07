@@ -1,10 +1,4 @@
-use crate::{data_mod::{settings::*, errors::*, errors::Result::*}, fns};
-
-use std::{
-    fmt::{self, Debug},
-    sync::{Arc, Mutex},
-    time::{Instant, Duration}
-};
+use crate::prelude::*;
 use sdl2::{render::Texture, event::Event};
 
 
