@@ -102,7 +102,6 @@ pub struct File {
     pub scroll_x: f64,
     pub scroll_y: f64,
     pub cursors: Vec<Cursor>,
-    pub selection_start: Option<(usize, usize)>,
 }
 
 impl File {
@@ -117,9 +116,9 @@ impl File {
                     x: 0,
                     y: 1,
                     wanted_x: 0,
+                    selection_start: None,
                 }
             ],
-            selection_start: None,
         }
     }
 }
@@ -128,9 +127,10 @@ impl File {
 
 #[derive(Debug)]
 pub struct Cursor {
-    pub x: u32,
-    pub y: u32,
-    pub wanted_x: u32,
+    pub x: usize,
+    pub y: usize,
+    pub wanted_x: usize,
+    pub selection_start: Option<(usize, usize)>,
 }
 
 
