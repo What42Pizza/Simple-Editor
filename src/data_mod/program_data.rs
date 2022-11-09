@@ -17,6 +17,7 @@ pub struct ProgramData {
     pub exit: Shared<bool>,
 
     pub keys_pressed: Shared<KeysPressed>,
+    pub last_text_input_timestamp: Shared<u32>,
     
     pub tasks: Shared<Vec<ProgramTask>>,
     pub tasks_paused: Shared<bool>,
@@ -42,6 +43,7 @@ impl ProgramData {
             exit: Shared::take(false),
 
             keys_pressed: Shared::take(KeysPressed::new()),
+            last_text_input_timestamp: Shared::take(0),
             
             tasks: Shared::take(vec!()),
             tasks_paused: Shared::take(false),
@@ -66,6 +68,7 @@ impl ProgramData {
             exit: self.exit.clone(),
 
             keys_pressed: self.keys_pressed.clone(),
+            last_text_input_timestamp: self.last_text_input_timestamp.clone(),
             
             tasks: self.tasks.clone(),
             tasks_paused: self.tasks_paused.clone(),

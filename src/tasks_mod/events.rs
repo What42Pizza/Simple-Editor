@@ -16,17 +16,10 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
             Ok(())
         }
 
-        Event::KeyDown {keycode: Some(keycode), repeat, .. } => {
-            handle_key_down(keycode, repeat, program_data, current_file)
-        }
+        Event::KeyDown {keycode: Some(keycode), repeat, timestamp, ..} => handle_key_down(keycode, repeat, program_data, current_file, timestamp),
+        Event::KeyUp {keycode: Some(keycode), repeat, ..} => handle_key_up(keycode, repeat, program_data, current_file),
 
-        Event::KeyUp {keycode: Some(keycode), repeat, .. } => {
-            handle_key_up(keycode, repeat, program_data, current_file)
-        }
-
-        Event::TextInput {text, ..} => {
-            handle_text_input(&text, current_file)
-        },
+        Event::TextInput {text, timestamp, ..} => handle_text_input(&text, program_data, current_file, timestamp),
 
         _ => Ok(())
 
@@ -37,7 +30,8 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
 
 
 
-pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: &mut File) -> Result<()> {
+pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: &mut File, timestamp: u32) -> Result<()> {
+    if (timestamp == *program_data.last_text_input_timestamp.lock().unwrap()) {return Ok(());}
     match keycode {
 
 
@@ -61,10 +55,7 @@ pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramDa
             Ok(())
         }
 
-        Keycode::Escape => {
-            handle_esc_pressed (program_data);
-            Ok(())
-        }
+        Keycode::Escape => handle_esc_pressed (program_data),
 
 
 
@@ -112,8 +103,9 @@ pub fn handle_key_up (keycode: Keycode, repeat: bool, program_data: &ProgramData
 
 
 
-pub fn handle_esc_pressed (program_data: &ProgramData) {
+pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<()> {
     *program_data.exit.lock().unwrap() = true;
+    Ok(())
 }
 
 
@@ -246,7 +238,16 @@ pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 
 
-fn handle_text_input (text: &str, current_file: &mut File) -> Result<()> {
-    println!("WIP: add char (or text?) {text}");
+fn handle_text_input (text: &str, program_data: &ProgramData, current_file: &mut File, timestamp: u32) -> Result<()> {
+    let place_text_fn = |file: &mut File, cursor_num| {
+        let cursor: &mut Cursor = &mut file.cursors[cursor_num];
+        let current_line = &mut file.contents[cursor.y];
+        let text_chars = text.chars().collect::<Vec<char>>();
+        fns::insert_all(&text_chars, current_line, cursor.x);
+        cursor.x += 1;
+        Ok(())
+    };
+    run_fn_at_cursors(place_text_fn, program_data, current_file)?;
+    *program_data.last_text_input_timestamp.lock().unwrap() = timestamp;
     Ok(())
 }

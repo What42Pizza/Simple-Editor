@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/07/22
+// Last updated 11/08/22
 
 
 
@@ -36,7 +36,7 @@ extern crate derive_is_enum_variant;
 
 
 use crate::prelude::*;
-use sdl2::EventPump;
+use sdl2::{EventPump, event::Event};
 
 
 
@@ -87,11 +87,33 @@ fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
 
     let mut tasks = program_data.tasks.lock().unwrap();
     for event in event_pump.poll_iter() {
-        tasks.push(ProgramTask::HandleEvent(event));
+        add_event_to_tasks(event, &mut tasks);
     }
     drop(tasks);
 
     add_frame_update_task(program_data);
+
+}
+
+
+
+fn add_event_to_tasks (event: Event, tasks: &mut MutexGuard<Vec<ProgramTask>>) {
+
+    // swap TextInput events with KeyDown events
+    if let Event::TextInput {timestamp: text_input_timestamp, ..} = event {
+        let last_task = &tasks[tasks.len() - 1];
+        if let ProgramTask::HandleEvent (last_event) = last_task {
+            if let Event::KeyDown {timestamp: key_down_timestamp, ..} = last_event {
+                if text_input_timestamp == *key_down_timestamp {
+                    let index = tasks.len() - 1;
+                    tasks.insert(index, ProgramTask::HandleEvent(event));
+                    return;
+                }
+            }
+        }
+    }
+
+    tasks.push(ProgramTask::HandleEvent(event));
 
 }
 

@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = "1.*"
-serde-hjson = "0.*"
-regex = "1.*"
-array-init = "2.*"
-lerp = "0.*"
-derive_is_enum_variant = "0.*"
-fmt-derive = "0.*"
+serde = "1.0.*"
+serde-hjson = "0.9.*"
+regex = "1.7.*"
+array-init = "2.0.*"
+lerp = "0.4.*"
+derive_is_enum_variant = "0.1.*"
+fmt-derive = "0.0.*"
 
 [dependencies.sdl2]
-version = "0.35"
+version = "0.35.*"
 default-features = false
 features = ["image", "ttf"]

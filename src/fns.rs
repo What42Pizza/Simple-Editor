@@ -50,6 +50,14 @@ pub fn split_lines (full_str: &str) -> Vec<String> {
 
 
 
+pub fn insert_all<T: Copy> (src: &[T], dest: &mut Vec<T>, position: usize) {
+    for (i, v) in src.iter().enumerate() {
+        dest.insert(position + i, *v);
+    }
+}
+
+
+
 pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
     if condition {
         Some(some_fn())
