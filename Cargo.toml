@@ -11,6 +11,7 @@ array-init = "2.0.*"
 lerp = "0.4.*"
 derive_is_enum_variant = "0.1.*"
 fmt-derive = "0.0.*"
+spin_sleep = "1.1.*"
 
 [dependencies.sdl2]
 version = "0.35.*"

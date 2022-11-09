@@ -61,6 +61,7 @@ pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramDa
 
         Keycode::Backspace => run_fn_at_cursors(backspace_fn, program_data, current_file),
         Keycode::Delete => run_fn_at_cursors(delete_fn, program_data, current_file),
+        Keycode::Return => run_fn_at_cursors(return_fn, program_data, current_file),
 
 
 
@@ -230,6 +231,22 @@ pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
     }
 
     current_line.remove(cursor.x);
+    cursor.wanted_x = cursor.x;
+    Ok(())
+}
+
+
+
+pub fn return_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+    let mut cursor = &mut current_file.cursors[cursor_num];
+    let mut contents = &mut current_file.contents;
+    let current_line = &mut contents[cursor.y];
+    
+    let new_line = current_line.split_off(cursor.x);
+    contents.insert(cursor.y + 1, new_line);
+
+    cursor.y += 1;
+    cursor.x = 0;
     cursor.wanted_x = cursor.x;
     Ok(())
 }

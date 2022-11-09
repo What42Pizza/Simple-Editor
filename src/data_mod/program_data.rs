@@ -14,6 +14,7 @@ pub struct ProgramData {
     pub errors: Shared<Vec<Error>>,
     pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
     pub start_instant: Instant,
+    pub last_frame_instant: Shared<Instant>,
     pub exit: Shared<bool>,
 
     pub keys_pressed: Shared<KeysPressed>,
@@ -40,6 +41,7 @@ impl ProgramData {
             errors: Shared::take(vec!()),
             frame_count: Shared::take(0),
             start_instant: Instant::now(),
+            last_frame_instant: Shared::take(Instant::now()),
             exit: Shared::take(false),
 
             keys_pressed: Shared::take(KeysPressed::new()),
@@ -65,6 +67,7 @@ impl ProgramData {
             errors: self.errors.clone(),
             frame_count: self.frame_count.clone(),
             start_instant: self.start_instant,
+            last_frame_instant: self.last_frame_instant.clone(),
             exit: self.exit.clone(),
 
             keys_pressed: self.keys_pressed.clone(),

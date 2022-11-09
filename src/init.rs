@@ -10,7 +10,7 @@ use sdl2::{Sdl, pixels::Color,
 
 
 
-pub fn init_sdl2() -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
+pub fn init_sdl2 (settings: &ProgramSettings) -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
 
     let sdl_context = sdl2::init().expect("Could not initialize sdl2");
     let _image_context = image::init(InitFlag::PNG).expect("Could not retrieve sdl image context");
@@ -20,9 +20,10 @@ pub fn init_sdl2() -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
         .build()
         .expect("Could not build window");
 
-    let mut canvas = window.into_canvas()
-        .accelerated()
-        .present_vsync()
+    let mut canvas_builder = window.into_canvas()
+        .accelerated();
+    if let FrameTimingSetting::VSync = settings.frame_timing {canvas_builder = canvas_builder.present_vsync();}
+    let mut canvas = canvas_builder
         .build()
         .expect("Could not build canvas");
 
@@ -41,8 +42,8 @@ pub fn init_sdl2() -> (Sdl, Sdl2TtfContext, Canvas<Window>) {
 
 
 pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
-    
-    let settings = load_settings();
+    let settings_mutex = program_data.settings.lock().unwrap();
+    let settings = settings_mutex.as_ref().unwrap();
 
     let mut font_path = fns::get_program_dir();
     font_path.push(&settings.font_path);
@@ -50,7 +51,8 @@ pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &
 
     let textures = load_textures(&font, texture_creator)?;
 
-    program_data.settings = Shared::take(Some(settings));
+    drop(settings);
+    drop(settings_mutex);
     continue_session(program_data)?;
 
     Ok((font, textures))

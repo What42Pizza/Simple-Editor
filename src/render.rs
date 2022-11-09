@@ -17,6 +17,19 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &
     // render (and resume tasks)
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
     *program_data.tasks_paused.lock().unwrap() = false;
+
+    'frame_timing: {
+        let settings_mutex = program_data.settings.lock().unwrap();
+        if let FrameTimingSetting::Maxxed(mut max_frame_time) = settings_mutex.as_ref().unwrap().frame_timing {
+            max_frame_time *= 1000;
+            let elapsed_time = program_data.last_frame_instant.lock().unwrap().elapsed().as_micros() as usize;
+            if elapsed_time > max_frame_time {break 'frame_timing;}
+            let time_to_sleep = max_frame_time - elapsed_time;
+            spin_sleep::sleep(Duration::from_micros(time_to_sleep as u64));
+        }
+    }
+    *program_data.last_frame_instant.lock().unwrap() = Instant::now();
+
     canvas.present();
     Ok(())
 

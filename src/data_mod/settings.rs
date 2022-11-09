@@ -6,6 +6,7 @@ use sdl2::pixels::Color;
 #[derive(Debug)]
 pub struct ProgramSettings {
 
+    pub frame_timing: FrameTimingSetting,
     pub background_color: Color,
 
     pub font_path: String,
@@ -25,6 +26,7 @@ impl ProgramSettings {
     pub fn default() -> Self {
         Self {
 
+            frame_timing: FrameTimingSetting::Maxxed(5),
             background_color: Color::RGB(27, 33, 47),
 
             font_path: String::from(""),
@@ -46,9 +48,34 @@ impl ProgramSettings {
 
 
 
+pub trait SettingValueEnum {
+    fn get_type(&self) -> String;
+}
+
+
+
 #[derive(Debug)]
 pub struct ContinueDetails {
     pub last_open_files: Vec<String>,
+}
+
+
+
+#[derive(Debug, Clone, Copy)]
+pub enum FrameTimingSetting {
+    VSync,
+    Maxxed (usize),
+    None,
+}
+
+impl SettingValueEnum for FrameTimingSetting {
+    fn get_type(&self) -> String {
+        match self {
+            Self::VSync => String::from("VSync"),
+            Self::Maxxed(_) => String::from("Maxxed"),
+            Self::None => String::from("None"),
+        }
+    }
 }
 
 
@@ -156,9 +183,30 @@ pub fn update_settings (settings: Value) -> Result<Map<String, Value>> {
 
 
 
+
+
 fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
+
+    let frame_timing = match get_setting_borrowed(&settings, "frame timing/type", Value::as_str, "string", &default_settings.frame_timing.get_type()) {
+        "vsync" => FrameTimingSetting::VSync,
+        "maxxed" => {
+            let mut max_frame_time = get_setting(&settings, "frame timing/max frame time", Value::as_i64, "i64", 5);
+            if max_frame_time < 0 {
+                println!("Warning: invalid setting value for \"frame timing/max frame time\", cannot be below 0");
+                max_frame_time = 5;
+            }
+            FrameTimingSetting::Maxxed(max_frame_time as usize)
+        }
+        "none" => FrameTimingSetting::None,
+        _ => {
+            println!("Warning: invalid setting value for \"frame timing/type\", only \"vsync\", \"maxxed\", and \"none\" are allowed");
+            default_settings.frame_timing
+        }
+    };
+
     Ok(ProgramSettings {
 
+        frame_timing,
         background_color: get_setting_color(&settings, "background color", default_settings.background_color),
 
         font_path: get_setting_lazy(&settings, "font path", |v| v.as_str().map(str::to_string), "String", || default_settings.font_path.to_string()),
@@ -182,6 +230,26 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
 
 
 pub fn get_setting<T> (settings: &Map<String, Value>, full_key: &str, value_fn: impl FnOnce(&Value) -> Option<T>, value_type_name: &str, default_value: T) -> T {
+
+    let found_value = match fns::get_hjson_value(settings, full_key) {
+        Some(v) => v,
+        None => {
+            println!("Warning: could not find setting \"{}\"", full_key);
+            return default_value;
+        }
+    };
+
+    match value_fn(found_value) {
+        Some(v) => v,
+        None => {
+            println!("Warning: setting \"{}\" needs to be of type {}, but was found to be of type {}", full_key, value_type_name, fns::get_value_type_name(found_value));
+            default_value
+        }
+    }
+
+}
+
+pub fn get_setting_borrowed<'a, T: ?Sized> (settings: &'a Map<String, Value>, full_key: &str, value_fn: impl FnOnce(&Value) -> Option<&T>, value_type_name: &str, default_value: &'a T) -> &'a T {
 
     let found_value = match fns::get_hjson_value(settings, full_key) {
         Some(v) => v,

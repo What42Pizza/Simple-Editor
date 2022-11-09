@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/08/22
+// Last updated 11/09/22
 
 
 
@@ -57,10 +57,18 @@ fn main() {
 
 fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
+    // init settings
+    let settings = load_settings();
+    *program_data.settings.lock().unwrap() = Some(settings);
+
     // sdl
-    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2();
+    let settings_mutex = program_data.settings.lock().unwrap();
+    let settings = settings_mutex.as_ref().unwrap();
+    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(&settings);
     let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
     let texture_creator = canvas.texture_creator();
+    drop(settings);
+    drop(settings_mutex);
 
     // main init
     let (font, mut tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
@@ -68,9 +76,21 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex));
 
     // main loop
+    let mut frame_count = 0;
+    let mut last_frame_count_print = Instant::now();
     while !*program_data.exit.lock().unwrap() {
+        let frame_start_time = Instant::now();
+
         update(program_data, &mut event_pump);
         render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;
+
+        frame_count += 1;
+        if last_frame_count_print.elapsed().as_secs_f64() > 1. {
+            println!("framerate: {frame_count}");
+            frame_count = 0;
+            last_frame_count_print = Instant::now();
+        }
+
     }
 
     finish::finish(program_data, task_thread)?;
@@ -102,13 +122,11 @@ fn add_event_to_tasks (event: Event, tasks: &mut MutexGuard<Vec<ProgramTask>>) {
     // swap TextInput events with KeyDown events
     if let Event::TextInput {timestamp: text_input_timestamp, ..} = event {
         let last_task = &tasks[tasks.len() - 1];
-        if let ProgramTask::HandleEvent (last_event) = last_task {
-            if let Event::KeyDown {timestamp: key_down_timestamp, ..} = last_event {
-                if text_input_timestamp == *key_down_timestamp {
-                    let index = tasks.len() - 1;
-                    tasks.insert(index, ProgramTask::HandleEvent(event));
-                    return;
-                }
+        if let ProgramTask::HandleEvent (Event::KeyDown {timestamp: key_down_timestamp, ..}) = last_task {
+            if text_input_timestamp == *key_down_timestamp {
+                let index = tasks.len() - 1;
+                tasks.insert(index, ProgramTask::HandleEvent(event));
+                return;
             }
         }
     }
