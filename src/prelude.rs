@@ -1,6 +1,10 @@
 pub use crate::{*,
-    data_mod::{program_data::*, settings::*, errors::*, errors::Result::*},
-    tasks_mod::tasks as tasks,
+    update_mod::update,
+    background_tasks_mod::background_tasks,
+    update_mod::{events},
+    data_mod::{program_data::*, settings::*,
+        errors::{*, Result::*}
+    },
 };
 
 pub use std::{fmt, fs,

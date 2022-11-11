@@ -181,9 +181,7 @@ impl<T> SharedFns<T> for Shared<T> {
 
 #[derive(Debug)]
 pub enum ProgramTask {
-    DoFrameUpdates,
     LoadFile (String),
     SaveFile (String),
     CloseFile (String),
-    HandleEvent (Event),
 }

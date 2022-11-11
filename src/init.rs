@@ -51,7 +51,6 @@ pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &
 
     let textures = load_textures(&font, texture_creator)?;
 
-    drop(settings);
     drop(settings_mutex);
     continue_session(program_data)?;
 

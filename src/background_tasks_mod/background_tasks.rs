@@ -37,11 +37,9 @@ pub fn run_tasks (program_data: ProgramData) {
 pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> Result<()> {
 
     match current_task {
-        ProgramTask::DoFrameUpdates => do_frame_updates(program_data)?,
         ProgramTask::LoadFile(file_path) => load_file(&file_path, program_data)?,
         ProgramTask::SaveFile(file_path) => save_file(&file_path, program_data)?,
         ProgramTask::CloseFile(file_path) => close_file(&file_path, program_data)?,
-        ProgramTask::HandleEvent(event) => tasks_mod::events::handle_event(event, program_data)?,
     }
 
     Ok(())

@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/09/22
+// Last updated 11/11/22
 
 
 
@@ -21,10 +21,11 @@
 
 
 mod prelude;
+mod update_mod;
 mod render;
 mod init;
 mod finish;
-mod tasks_mod;
+mod background_tasks_mod;
 mod data_mod;
 mod fns;
 
@@ -64,16 +65,15 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     // sdl
     let settings_mutex = program_data.settings.lock().unwrap();
     let settings = settings_mutex.as_ref().unwrap();
-    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(&settings);
+    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(settings);
     let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
     let texture_creator = canvas.texture_creator();
-    drop(settings);
     drop(settings_mutex);
 
     // main init
     let (font, mut tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
     let thread_program_data_mutex = program_data.clone();
-    let task_thread = thread::spawn(move || tasks::run_tasks(thread_program_data_mutex));
+    let task_thread = thread::spawn(move || background_tasks::run_tasks(thread_program_data_mutex));
 
     // main loop
     let mut frame_count = 0;
@@ -81,7 +81,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     while !*program_data.exit.lock().unwrap() {
         let frame_start_time = Instant::now();
 
-        update(program_data, &mut event_pump);
+        update::update(program_data, &mut event_pump);
         render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;
 
         frame_count += 1;
@@ -97,49 +97,4 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     Ok(())
 
-}
-
-
-
-fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
-
-    *program_data.frame_count.lock().unwrap() += 1;
-
-    let mut tasks = program_data.tasks.lock().unwrap();
-    for event in event_pump.poll_iter() {
-        add_event_to_tasks(event, &mut tasks);
-    }
-    drop(tasks);
-
-    add_frame_update_task(program_data);
-
-}
-
-
-
-fn add_event_to_tasks (event: Event, tasks: &mut MutexGuard<Vec<ProgramTask>>) {
-
-    // swap TextInput events with KeyDown events
-    if let Event::TextInput {timestamp: text_input_timestamp, ..} = event {
-        let last_task = &tasks[tasks.len() - 1];
-        if let ProgramTask::HandleEvent (Event::KeyDown {timestamp: key_down_timestamp, ..}) = last_task {
-            if text_input_timestamp == *key_down_timestamp {
-                let index = tasks.len() - 1;
-                tasks.insert(index, ProgramTask::HandleEvent(event));
-                return;
-            }
-        }
-    }
-
-    tasks.push(ProgramTask::HandleEvent(event));
-
-}
-
-
-
-fn add_frame_update_task (program_data: &mut ProgramData) {
-    let mut has_frame_update_task = program_data.has_frame_update_task.lock().unwrap();
-    if *has_frame_update_task {return;}
-    *has_frame_update_task = true;
-    program_data.tasks.lock().unwrap().push(ProgramTask::DoFrameUpdates);
 }
