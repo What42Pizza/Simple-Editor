@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use sdl2::{render::Texture, event::Event};
+use sdl2::{render::Texture};
 
 
 

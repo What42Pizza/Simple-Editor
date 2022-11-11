@@ -79,7 +79,6 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     let mut frame_count = 0;
     let mut last_frame_count_print = Instant::now();
     while !*program_data.exit.lock().unwrap() {
-        let frame_start_time = Instant::now();
 
         update::update(program_data, &mut event_pump);
         render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;

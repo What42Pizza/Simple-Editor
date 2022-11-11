@@ -30,9 +30,9 @@ pub fn handle_events (program_data: &mut ProgramData, event_pump: &mut EventPump
 
 
 
-pub fn insert_event<'a> (event: Event, events: &'a mut Vec<Event>) {
+pub fn insert_event (event: Event, events: &mut Vec<Event>) {
 
-    if events.len() == 0 {
+    if events.is_empty() {
         events.push(event);
         return;
     }

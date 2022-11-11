@@ -31,7 +31,7 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
 
 
 pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: &mut File, timestamp: u32) -> Result<()> {
-    if (timestamp == *program_data.last_text_input_timestamp.lock().unwrap()) {return Ok(());}
+    if timestamp == *program_data.last_text_input_timestamp.lock().unwrap() {return Ok(());}
     match keycode {
 
 
@@ -137,7 +137,7 @@ pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize) -> Result<
 
 pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
-    let max_y = (current_file.contents.len() - 1);
+    let max_y = current_file.contents.len() - 1;
     cursor.y = cursor.y.min(max_y - 1) + 1;
     let max_x = current_file.contents[cursor.y].len();
     cursor.x = cursor.wanted_x.min(max_x);
@@ -195,7 +195,7 @@ pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize) -> Result
 
 pub fn backspace_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
-    let mut contents = &mut current_file.contents;
+    let contents = &mut current_file.contents;
     'main: {
 
         if cursor.x == 0 {
@@ -220,7 +220,7 @@ pub fn backspace_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
-    let mut contents = &mut current_file.contents;
+    let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
 
     if cursor.x == current_line.len() {
@@ -239,7 +239,7 @@ pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 pub fn return_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
-    let mut contents = &mut current_file.contents;
+    let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
     
     let new_line = current_line.split_off(cursor.x);

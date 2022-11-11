@@ -49,26 +49,6 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
 
 
 
-pub fn do_frame_updates (program_data: &ProgramData) -> Result<()> {
-
-    let current_time = Instant::now();
-    let mut last_frame_updates_time = program_data.last_frame_updates_time.lock().unwrap();
-    let dt = current_time.duration_since(*last_frame_updates_time);
-    *last_frame_updates_time = current_time;
-    drop(last_frame_updates_time);
-
-    let mut frame_update_fns = program_data.frame_update_fns.lock().unwrap();
-    while !frame_update_fns.is_empty() {
-        frame_update_fns.pop().unwrap()(program_data, &dt);
-    }
-
-    Ok(())
-}
-
-
-
-
-
 pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
 
     let contents = fs::read_to_string(file_path)

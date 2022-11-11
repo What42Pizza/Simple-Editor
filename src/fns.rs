@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use std::{path::PathBuf, fs::OpenOptions};
-use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext, keyboard::Keycode,
+use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
     render::{Texture, TextureCreator}
 };
 

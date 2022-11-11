@@ -26,7 +26,7 @@ impl ProgramSettings {
     pub fn default() -> Self {
         Self {
 
-            frame_timing: FrameTimingSetting::Maxxed(5),
+            frame_timing: FrameTimingSetting::VSync,
             background_color: Color::RGB(27, 33, 47),
 
             font_path: String::from(""),
