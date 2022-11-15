@@ -113,20 +113,42 @@ pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<()> {
 
 
 
-pub fn run_fn_at_cursors (edit_fn: impl Fn(&mut File, usize) -> Result<()>, program_data: &ProgramData, current_file: &mut File) -> Result<()> {
+pub fn run_fn_at_cursors (cursor_fn: impl Fn(&mut File, usize, &ProgramData) -> Result<()>, program_data: &ProgramData, current_file: &mut File) -> Result<()> {
     for i in 0..current_file.cursors.len() {
-        edit_fn(current_file, i)?
+        cursor_fn(current_file, i, program_data)?
     }
+    remove_cursor_duplicates(&mut current_file.cursors);
     *program_data.cursor_place_instant.lock().unwrap() = Instant::now();
     Ok(())
 }
 
 
 
+pub fn remove_cursor_duplicates (cursors: &mut Vec<Cursor>) {
+    // this is O(n^2), but it should be fine
+    let mut cursors_to_remove = vec!();
+    for i1 in 0..cursors.len() {
+        let cursor1 = &cursors[i1];
+        'inner: for i2 in (i1 + 1)..cursors.len() {
+            let cursor2 = &cursors[i2];
+            if cursor1.x == cursor2.x && cursor1.y == cursor2.y {
+                cursors_to_remove.push(i1);
+                break 'inner;
+            }
+        }
+    }
+    for cursor_index in cursors_to_remove.iter().rev() {
+        cursors.remove(*cursor_index);
+    }
+}
 
 
-pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+
+
+
+pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
+    handle_cursor_selection_on_move(cursor, program_data);
     cursor.y = cursor.y.max(1) - 1;
     let max_x = current_file.contents[cursor.y].len();
     cursor.x = cursor.wanted_x.min(max_x);
@@ -135,8 +157,9 @@ pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize) -> Result<
 
 
 
-pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
+    handle_cursor_selection_on_move(cursor, program_data);
     let max_y = current_file.contents.len() - 1;
     cursor.y = cursor.y.min(max_y - 1) + 1;
     let max_x = current_file.contents[cursor.y].len();
@@ -146,8 +169,9 @@ pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize) -> Resul
 
 
 
-pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
+    handle_cursor_selection_on_move(cursor, program_data);
     'main: {
         if cursor.x > 0 {
             cursor.x -= 1;
@@ -163,8 +187,9 @@ pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize) -> Resul
 
 
 
-pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
+    handle_cursor_selection_on_move(cursor, program_data);
     let max_x = current_file.contents[cursor.y].len();
     'main: {
         if cursor.x < max_x {
@@ -181,8 +206,9 @@ pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize) -> Resu
 
 
 
-pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
+    handle_cursor_selection_on_move(cursor, program_data);
     let max_x = current_file.contents[cursor.y].len();
     cursor.x = max_x;
     cursor.wanted_x = cursor.x;
@@ -191,12 +217,29 @@ pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize) -> Result
 
 
 
+pub fn handle_cursor_selection_on_move (cursor: &mut Cursor, program_data: &ProgramData) {
+    if program_data.keys_pressed.lock().unwrap().shift_pressed {
+        if cursor.selection_start.is_none() {
+            cursor.selection_start = Some((cursor.x, cursor.y));
+        }
+    } else {
+        cursor.selection_start = None;
+    }
+}
 
 
-pub fn backspace_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+
+
+
+pub fn backspace_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     'main: {
+
+        if cursor.selection_start.is_some() {
+            delete_selected_area(contents, cursor);
+            break 'main;
+        }
 
         if cursor.x == 0 {
             if cursor.y == 0 {return Ok(());}
@@ -218,10 +261,16 @@ pub fn backspace_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 
 
-pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn delete_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
+
+    if cursor.selection_start.is_some() {
+        delete_selected_area(contents, cursor);
+        cursor.wanted_x = cursor.x;
+        return Ok(());
+    }
 
     if cursor.x == current_line.len() {
         if cursor.y == contents.len() - 1 {return Ok(());}
@@ -237,7 +286,7 @@ pub fn delete_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 
 
-pub fn return_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
+pub fn return_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
@@ -253,10 +302,18 @@ pub fn return_fn (current_file: &mut File, cursor_num: usize) -> Result<()> {
 
 
 
+pub fn delete_selected_area (contents: &mut Vec<Vec<char>>, cursor: &Cursor) {
+    let (start_x, start_y) = cursor.selection_start.unwrap();
+    let (end_x, end_y) = (cursor.x, cursor.y);
+    println!("WIP: delete area between ({start_x}, {start_y}) and ({end_x}, {end_y})");
+}
+
+
+
 
 
 fn handle_text_input (text: &str, program_data: &ProgramData, current_file: &mut File, timestamp: u32) -> Result<()> {
-    let place_text_fn = |file: &mut File, cursor_num| {
+    let place_text_fn = |file: &mut File, cursor_num, program_data: &ProgramData| {
         let cursor: &mut Cursor = &mut file.cursors[cursor_num];
         let current_line = &mut file.contents[cursor.y];
         let text_chars = text.chars().collect::<Vec<char>>();

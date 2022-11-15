@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/11/22
+// Last updated 11/15/22
 
 
 
@@ -17,6 +17,7 @@
 
 // nightly features
 #![feature(try_trait_v2)]
+#![feature(type_alias_impl_trait)]
 
 
 
