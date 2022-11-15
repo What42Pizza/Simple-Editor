@@ -38,13 +38,15 @@ extern crate derive_is_enum_variant;
 
 
 use crate::prelude::*;
-use sdl2::{EventPump, event::Event};
+use sdl2::{EventPump, event::Event, pixels::Color};
 
 
 
 
 
 fn main() {
+
+    println!("{}", fns::color_to_u64(Color::RGBA(127, 191, 255, 127)));
 
     let mut program_data = ProgramData::new();
 

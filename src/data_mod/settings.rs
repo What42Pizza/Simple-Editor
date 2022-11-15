@@ -17,6 +17,7 @@ pub struct ProgramSettings {
     pub cursor_width: f64, // relative to screen width
     pub cursor_height: f64, // relative to font height
     pub cursor_color: Color,
+    pub cursor_selection_color: Color,
 
     pub continue_details: ContinueDetails,
 
@@ -37,6 +38,7 @@ impl ProgramSettings {
             cursor_width: 1./500.,
             cursor_height: 1.1,
             cursor_color: Color::RGB(255, 255, 255),
+            cursor_selection_color: Color::RGBA(0, 31, 255, 127),
 
             continue_details: ContinueDetails {
                 last_open_files: vec!(),
@@ -217,6 +219,7 @@ fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &Pro
         cursor_width: get_setting(&settings, "cursor width", Value::as_f64, "f64", default_settings.cursor_width),
         cursor_height: get_setting(&settings, "cursor height", Value::as_f64, "f64", default_settings.cursor_height),
         cursor_color: get_setting_color(&settings, "cursor color", default_settings.cursor_color),
+        cursor_selection_color: get_setting_color(&settings, "cursor selection color", default_settings.cursor_selection_color),
 
         continue_details: ContinueDetails {
             last_open_files: get_setting_string_array(&settings, "continue details/last open files", vec!()),
@@ -331,7 +334,7 @@ pub fn get_setting_string_array (settings: &Map<String, Value>, full_key: &str, 
 
 pub fn get_setting_color (settings: &Map<String, Value>, full_key: &str, default_value: Color) -> Color {
     match get_setting_defaultless(settings, full_key, Value::as_u64, "U64") {
-        Some(value) => fns::u64_to_color_rgb(value).unwrap_or(default_value),
+        Some(value) => fns::u64_to_color(value).unwrap_or(default_value),
         None => default_value
     }
 }

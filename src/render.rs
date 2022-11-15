@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
-    render::{WindowCanvas, TextureCreator},
+    render::{WindowCanvas, TextureCreator, BlendMode},
     rect::{Rect, Point}
 };
 
@@ -75,13 +75,11 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
     let cursor_place_instant = program_data.cursor_place_instant.lock().unwrap();
     let time_since_cursor_place = cursor_place_instant.elapsed().as_secs_f64();
     let cursor_flashing_speed = settings.cursor_flashing_speed;
-    if time_since_cursor_place % cursor_flashing_speed < cursor_flashing_speed / 2. {
-        let cursor_width = (width as f64 * settings.cursor_width) as u32;
-        let cursor_height = (settings.font_size as f64 * settings.cursor_height) as u32;
-        canvas.set_draw_color(settings.cursor_color);
-        for cursor in &current_file.cursors {
-            render_cursor(cursor, canvas, &text_section, cursor_width, cursor_height, settings)?;
-        }
+    let render_cursor_lines = time_since_cursor_place % cursor_flashing_speed < cursor_flashing_speed / 2.;
+    let cursor_width = (width as f64 * settings.cursor_width) as u32;
+    let cursor_height = (settings.font_size as f64 * settings.cursor_height) as u32;
+    for cursor in &current_file.cursors {
+        render_cursor(cursor, cursor_width, cursor_height, render_cursor_lines, current_file, canvas, &text_section, settings)?;
     }
 
     Ok(())
@@ -108,11 +106,48 @@ pub fn render_file_text (text: &[char], text_y: usize, section: &Rect, font: &Fo
 
 
 
-pub fn render_cursor (cursor: &Cursor, canvas: &mut WindowCanvas, section: &Rect, cursor_width: u32, cursor_height: u32, settings: &ProgramSettings) -> Result<()> {
-    let (cursor_x, cursor_y) = get_char_position(cursor.x, cursor.y, section, settings);
+pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, render_cursor_lines: bool, current_file: &File, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<()> {
+
+    // render selection
+    if let Some((mut selection_start_x, mut selection_start_y)) = cursor.selection_start {
+        let (mut selection_end_x, mut selection_end_y) = (cursor.x, cursor.y);
+        canvas.set_blend_mode(BlendMode::Blend);
+        canvas.set_draw_color(settings.cursor_selection_color);
+        if selection_start_y == cursor.y {
+            if selection_start_x > selection_end_x {(selection_start_x, selection_end_x) = (selection_end_x, selection_start_x);}
+            render_rect_over_chars(selection_start_x, selection_end_x, selection_end_y, cursor_height, canvas, section, settings)?;
+        } else {
+            if selection_start_y > selection_end_y {(selection_start_x, selection_start_y, selection_end_x, selection_end_y) = (selection_end_x, selection_end_y, selection_start_x, selection_start_y);}
+            let contents = &current_file.contents;
+            render_rect_over_chars(selection_start_x, contents[selection_start_y].len() + 1, selection_start_y, cursor_height, canvas, section, settings)?;
+            for i in (selection_start_y + 1)..selection_end_y {
+                render_rect_over_chars(0, contents[i].len() + 1, i, cursor_height, canvas, section, settings)?;
+            }
+            render_rect_over_chars(0, selection_end_x, selection_end_y, cursor_height, canvas, section, settings)?;
+        }
+        canvas.set_blend_mode(BlendMode::None);
+    }
+
+    if !render_cursor_lines {return Ok(());}
+
+    // render cursor line
     let y_offset = (settings.font_size * 3 / 32) as i32;
+    canvas.set_draw_color(settings.cursor_color);
+    let (cursor_x, cursor_y) = get_char_position(cursor.x, cursor.y, section, settings);
     let cursor_rect = Rect::new(cursor_x, cursor_y + y_offset, cursor_width, cursor_height);
-    canvas.draw_rect(clamp_to_section(&cursor_rect, section).1).to_custom_err()
+    canvas.fill_rect(clamp_to_section(&cursor_rect, section).1).to_custom_err()
+
+}
+
+
+
+pub fn render_rect_over_chars (x_pos_1: usize, x_pos_2: usize, y_pos: usize, char_height: u32, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<()> {
+    let y_offset = (settings.font_size * 3 / 32) as i32;
+    let x_offset = (settings.font_size * 1 / 32) as i32 * -1;
+    let (mut char_x_1, char_y) = get_char_position(x_pos_1, y_pos, section, settings);
+    let (mut char_x_2, char_y) = get_char_position(x_pos_2, y_pos, section, settings);
+    let selection_rect = Rect::new(char_x_1 + x_offset, char_y + y_offset, (char_x_2 - char_x_1) as u32, char_height);
+    canvas.fill_rect(clamp_to_section(&selection_rect, section).1).to_custom_err()
 }
 
 
@@ -122,7 +157,7 @@ pub fn render_cursor (cursor: &Cursor, canvas: &mut WindowCanvas, section: &Rect
 pub fn get_char_position (char_x: usize, char_y: usize, section: &Rect, settings: &ProgramSettings) -> (i32, i32) {
     let padding = div(section.width(), 80.) as i32;
     let char_height = settings.font_size;
-    let char_width = char_height * 3 / 4;
+    let char_width = char_height * 11 / 16;
     let char_spacing = (char_height as f64 * settings.font_spacing) as u32;
     ((char_x as u32 * char_width) as i32 + padding, (char_y as u32 * char_spacing) as i32 + padding)
 }

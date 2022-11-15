@@ -68,18 +68,25 @@ pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
 
 
 
-pub fn u64_to_color_rgb (input: u64) -> Option<Color> {
-    some_if(input <= 0xFFFFFF, || {
-        Color::RGB(
-            get_byte(input, 2),
-            get_byte(input, 1),
+pub fn u64_to_color (input: u64) -> Option<Color> {
+    some_if(input <= 0xFFFFFFFF, || {
+        Color::RGBA(
             get_byte(input, 0),
+            get_byte(input, 1),
+            get_byte(input, 2),
+            get_byte(input, 3),
         )
     })
 }
 
 pub fn get_byte (input: u64, byte_num: u8) -> u8 {
     ((input & (0xFF << (byte_num * 8))) >> (byte_num * 8)) as u8
+}
+
+pub fn color_to_u64 (color: Color) -> u64 {
+    let (r, g, b, a) = color.rgba();
+    let (r, g, b, a) = (r as u64, g as u64, b as u64, a as u64);
+    r + (g << 8) + (b << 16) + (a << 24)
 }
 
 
