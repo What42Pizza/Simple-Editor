@@ -67,7 +67,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
     let text_section = Rect::new(0, buttons_bottom_y as i32, width, height - buttons_bottom_y);
     let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
     for (i, current_line) in current_file.contents.iter().enumerate() {
-        render_file_text(current_line, i, &text_section, font, canvas, texture_creator, textures, settings)?;
+        render_text_line(current_line, i, &text_section, font, canvas, texture_creator, textures, settings)?;
     }
 
 
@@ -88,7 +88,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
 
-pub fn render_file_text (text: &[char], text_y: usize, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
+pub fn render_text_line (text: &[char], text_y: usize, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
     for (i, char) in text.iter().enumerate() {
         let char = *char as usize;
         if char < 256 {
@@ -120,8 +120,8 @@ pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, re
             if selection_start_y > selection_end_y {(selection_start_x, selection_start_y, selection_end_x, selection_end_y) = (selection_end_x, selection_end_y, selection_start_x, selection_start_y);}
             let contents = &current_file.contents;
             render_rect_over_chars(selection_start_x, contents[selection_start_y].len() + 1, selection_start_y, cursor_height, canvas, section, settings)?;
-            for i in (selection_start_y + 1)..selection_end_y {
-                render_rect_over_chars(0, contents[i].len() + 1, i, cursor_height, canvas, section, settings)?;
+            for (i, current_line) in contents.iter().enumerate().take(selection_end_y).skip(selection_start_y + 1) {
+                render_rect_over_chars(0, current_line.len() + 1, i, cursor_height, canvas, section, settings)?;
             }
             render_rect_over_chars(0, selection_end_x, selection_end_y, cursor_height, canvas, section, settings)?;
         }
@@ -143,7 +143,7 @@ pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, re
 
 pub fn render_rect_over_chars (x_pos_1: usize, x_pos_2: usize, y_pos: usize, char_height: u32, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<()> {
     let y_offset = (settings.font_size * 3 / 32) as i32;
-    let x_offset = (settings.font_size * 1 / 32) as i32 * -1;
+    let x_offset = -((settings.font_size * 1 / 32) as i32);
     let (mut char_x_1, char_y) = get_char_position(x_pos_1, y_pos, section, settings);
     let (mut char_x_2, char_y) = get_char_position(x_pos_2, y_pos, section, settings);
     let selection_rect = Rect::new(char_x_1 + x_offset, char_y + y_offset, (char_x_2 - char_x_1) as u32, char_height);

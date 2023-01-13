@@ -50,6 +50,7 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
 
 
 pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
+    println!("Loading files {file_path}");
 
     let contents = fs::read_to_string(file_path)
         .err_details_lazy(|| "Failed to read file \"".to_string() + file_path + "\"")?;
@@ -62,20 +63,20 @@ pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
     }
     drop(curent_file);
 
-    println!("loaded file {}", file_path);
+    println!("loaded file {file_path}");
     Ok(())
 }
 
 
 
 pub fn save_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
-    println!("wip: save file {}", file_path);
+    println!("wip: save file {file_path}");
     Ok(())
 }
 
 
 
 pub fn close_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
-    println!("wip: close file {}", file_path);
+    println!("wip: close file {file_path}");
     Ok(())
 }

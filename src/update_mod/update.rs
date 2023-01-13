@@ -8,6 +8,13 @@ pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
 
     handle_events(program_data, event_pump);
 
+    let mut errors = program_data.errors.lock().unwrap();
+    for error in errors.iter() {
+        println!("ERROR: {error}");
+    }
+    errors.clear();
+    drop(errors);
+
     *program_data.frame_count.lock().unwrap() += 1;
 }
 
@@ -15,16 +22,16 @@ pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
 
 pub fn handle_events (program_data: &mut ProgramData, event_pump: &mut EventPump) {
 
+    // get list of events and re-order as needed
     let mut events = vec!();
     for event in event_pump.poll_iter() {
         insert_event(event, &mut events);
     }
 
-    let mut tasks = program_data.tasks.lock().unwrap();
+    // handle events (in correct order)
     for event in events {
         events::handle_event(event, program_data);
     }
-    drop(tasks);
 
 }
 

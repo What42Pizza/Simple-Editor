@@ -25,7 +25,7 @@ mod prelude;
 mod update_mod;
 mod render;
 mod init;
-mod finish;
+mod unwind;
 mod background_tasks_mod;
 mod data_mod;
 mod fns;
@@ -45,8 +45,6 @@ use sdl2::{EventPump, event::Event, pixels::Color};
 
 
 fn main() {
-
-    println!("{}", fns::color_to_u64(Color::RGBA(127, 191, 255, 127)));
 
     let mut program_data = ProgramData::new();
 
@@ -95,7 +93,8 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     }
 
-    finish::finish(program_data, task_thread)?;
+    // finish and close
+    unwind::unwind(program_data, task_thread)?;
 
     Ok(())
 

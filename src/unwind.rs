@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 
 
-pub fn finish (program_data: &ProgramData, task_thread: JoinHandle<()>) -> Result<()> {
+pub fn unwind (program_data: &ProgramData, task_thread: JoinHandle<()>) -> Result<()> {
 
     // set continue details
 
