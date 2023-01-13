@@ -23,8 +23,8 @@ pub struct ProgramSettings {
 
 }
 
-impl ProgramSettings {
-    pub fn default() -> Self {
+impl Default for ProgramSettings {
+    fn default() -> Self {
         Self {
 
             frame_timing: FrameTimingSetting::VSync,

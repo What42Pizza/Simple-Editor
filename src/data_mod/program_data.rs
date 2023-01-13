@@ -7,7 +7,7 @@ use sdl2::{render::Texture};
 
 
 
-type FrameUpdateFns = Box<dyn FnOnce(&ProgramData, &Duration) + Send>;
+type FrameUpdateFns = Box<dyn FnOnce(&ProgramData, &Duration) + Send + Sync>;
 
 #[derive(fmt_derive::Debug)]
 pub struct ProgramData {
@@ -34,8 +34,6 @@ pub struct ProgramData {
     pub cursor_place_instant: Shared<Instant>,
 
 }
-
-unsafe impl Send for ProgramData {}
 
 impl ProgramData {
     pub fn new() -> Self {
@@ -147,6 +145,7 @@ pub struct Cursor {
 
 
 
+#[derive(Debug)]
 pub struct KeysPressed {
     pub shift_pressed: bool,
     pub control_pressed: bool,
