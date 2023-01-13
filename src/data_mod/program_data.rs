@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::prelude::*;
 use sdl2::{render::Texture};
 
@@ -32,6 +34,8 @@ pub struct ProgramData {
     pub cursor_place_instant: Shared<Instant>,
 
 }
+
+unsafe impl Send for ProgramData {}
 
 impl ProgramData {
     pub fn new() -> Self {
@@ -163,7 +167,7 @@ impl KeysPressed {
 
 
 
-pub type Shared<T> = Arc<Mutex<T>>;
+pub type Shared<T> = Arc<AtomicRefCell<T>>;
 
 pub trait SharedFns<T> {
     fn take (v: T) -> Self;
@@ -171,7 +175,7 @@ pub trait SharedFns<T> {
 
 impl<T> SharedFns<T> for Shared<T> {
     fn take (v: T) -> Self {
-        Arc::new(Mutex::new(v))
+        Arc::new(AtomicRefCell::new(v))
     }
 }
 

@@ -4,12 +4,12 @@ use sdl2::{event::Event, keyboard::Keycode};
 
 
 pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
-    let mut files = program_data.files.lock().unwrap();
-    let mut current_file = fns::get_current_file(program_data, &mut files)?;
+    let mut files = program_data.files.borrow_mut();
+    let mut current_file = fns::get_current_file_mut(program_data, &mut files)?;
     match event {
 
         Event::Quit {..}  => {
-            *program_data.exit.lock().unwrap() = true;
+            *program_data.exit.borrow_mut() = true;
             Ok(())
         }
 
@@ -28,7 +28,7 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
 
 
 pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: Option<&mut File>, timestamp: u32) -> Result<()> {
-    if timestamp == *program_data.last_text_input_timestamp.lock().unwrap() {return Ok(());}
+    if timestamp == *program_data.last_text_input_timestamp.borrow() {return Ok(());}
     match keycode {
 
 
@@ -40,15 +40,15 @@ pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramDa
         Keycode::End   if current_file.is_some() => run_fn_at_cursors(move_cursor_end_fn  , program_data, current_file.unwrap()),
 
         Keycode::LShift | Keycode::RShift => {
-            program_data.keys_pressed.lock().unwrap().shift_pressed = true;
+            program_data.keys_pressed.borrow_mut().shift_pressed = true;
             Ok(())
         }
         Keycode::LCtrl | Keycode::RCtrl => {
-            program_data.keys_pressed.lock().unwrap().control_pressed = true;
+            program_data.keys_pressed.borrow_mut().control_pressed = true;
             Ok(())
         }
         Keycode::LAlt | Keycode::RAlt => {
-            program_data.keys_pressed.lock().unwrap().alt_pressed = true;
+            program_data.keys_pressed.borrow_mut().alt_pressed = true;
             Ok(())
         }
 
@@ -81,15 +81,15 @@ pub fn handle_key_up (keycode: Keycode, repeat: bool, program_data: &ProgramData
     match keycode {
 
         Keycode::LShift | Keycode::RShift => {
-            program_data.keys_pressed.lock().unwrap().shift_pressed = false;
+            program_data.keys_pressed.borrow_mut().shift_pressed = false;
             Ok(())
         }
         Keycode::LCtrl | Keycode::RCtrl => {
-            program_data.keys_pressed.lock().unwrap().control_pressed = false;
+            program_data.keys_pressed.borrow_mut().control_pressed = false;
             Ok(())
         }
         Keycode::LAlt | Keycode::RAlt => {
-            program_data.keys_pressed.lock().unwrap().alt_pressed = false;
+            program_data.keys_pressed.borrow_mut().alt_pressed = false;
             Ok(())
         }
 
@@ -103,7 +103,7 @@ pub fn handle_key_up (keycode: Keycode, repeat: bool, program_data: &ProgramData
 
 
 pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<()> {
-    *program_data.exit.lock().unwrap() = true;
+    *program_data.exit.borrow_mut() = true;
     Ok(())
 }
 
@@ -116,7 +116,7 @@ pub fn run_fn_at_cursors (cursor_fn: impl Fn(&mut File, usize, &ProgramData) -> 
         cursor_fn(current_file, i, program_data)?
     }
     remove_cursor_duplicates(&mut current_file.cursors);
-    *program_data.cursor_place_instant.lock().unwrap() = Instant::now();
+    *program_data.cursor_place_instant.borrow_mut() = Instant::now();
     Ok(())
 }
 
@@ -215,7 +215,7 @@ pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize, program_d
 
 
 pub fn handle_cursor_selection_on_move (cursor: &mut Cursor, program_data: &ProgramData) {
-    if program_data.keys_pressed.lock().unwrap().shift_pressed {
+    if program_data.keys_pressed.borrow().shift_pressed {
         if cursor.selection_start.is_none() {
             cursor.selection_start = Some((cursor.x, cursor.y));
         }
@@ -320,6 +320,6 @@ fn handle_text_input (text: &str, program_data: &ProgramData, current_file: Opti
         Ok(())
     };
     run_fn_at_cursors(place_text_fn, program_data, current_file)?;
-    *program_data.last_text_input_timestamp.lock().unwrap() = timestamp;
+    *program_data.last_text_input_timestamp.borrow_mut() = timestamp;
     Ok(())
 }

@@ -148,10 +148,33 @@ pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, full_key: &
 
 
 
-pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a mut MutexGuard<Vec<File>>) -> Result<Option<&'a mut File>> {
+pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a AtomicRefMut<Vec<File>>) -> Result<Option<&'a File>> {
 
     // get file num
-    let current_file_num_mutex = program_data.current_file_num.lock().unwrap();
+    let current_file_num_mutex = program_data.current_file_num.borrow();
+    let Some(current_file_num) = *current_file_num_mutex else {return Ok(None);};
+    drop(current_file_num_mutex);
+
+    // get file or return err
+    if current_file_num >= files.len() {
+        let error_details = match files.len() {
+            0=> "Current file num is ".to_string() + &current_file_num.to_string() + " but there no files open",
+            1 => "Current file num is ".to_string() + &current_file_num.to_string() + " but there is only 1 file open",
+            _ => "Current file num is ".to_string() + &current_file_num.to_string() + " but there are only " + &files.len().to_string() + " files open",
+        };
+        return err("InvalidFileNum", &error_details);
+    }
+
+    Ok(Some(&files[current_file_num]))
+
+}
+
+
+
+pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut AtomicRefMut<Vec<File>>) -> Result<Option<&'a mut File>> {
+
+    // get file num
+    let current_file_num_mutex = program_data.current_file_num.borrow();
     let Some(current_file_num) = *current_file_num_mutex else {return Ok(None);};
     drop(current_file_num_mutex);
 

@@ -9,26 +9,26 @@ use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
 pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
 
     // pause tasks
-    *program_data.tasks_paused.lock().unwrap() = true;
-    while *program_data.tasks_ongoing.lock().unwrap() {
+    *program_data.tasks_paused.borrow_mut() = true;
+    while *program_data.tasks_ongoing.borrow() {
         thread::sleep(Duration::from_millis(1));
     }
 
     // render (and resume tasks)
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
-    *program_data.tasks_paused.lock().unwrap() = false;
+    *program_data.tasks_paused.borrow_mut() = false;
 
     'frame_timing: {
-        let settings_mutex = program_data.settings.lock().unwrap();
+        let settings_mutex = program_data.settings.borrow();
         if let FrameTimingSetting::Maxxed(mut max_frame_time) = settings_mutex.as_ref().unwrap().frame_timing {
             max_frame_time *= 1000;
-            let elapsed_time = program_data.last_frame_instant.lock().unwrap().elapsed().as_micros() as usize;
+            let elapsed_time = program_data.last_frame_instant.borrow().elapsed().as_micros() as usize;
             if elapsed_time > max_frame_time {break 'frame_timing;}
             let time_to_sleep = max_frame_time - elapsed_time;
             spin_sleep::sleep(Duration::from_micros(time_to_sleep as u64));
         }
     }
-    *program_data.last_frame_instant.lock().unwrap() = Instant::now();
+    *program_data.last_frame_instant.borrow_mut() = Instant::now();
 
     canvas.present();
     Ok(())
@@ -42,7 +42,7 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &
 pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
 
     // get data
-    let settings_mutex = program_data.settings.lock().unwrap();
+    let settings_mutex = program_data.settings.borrow();
     let settings = settings_mutex.as_ref().expect("Error: settings is none");
     let (width, height) = canvas.output_size().to_custom_err()?;
     let buttons_bottom_y = div(height, 20.);
@@ -58,7 +58,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
     // render text
-    let mut files = program_data.files.lock().unwrap();
+    let mut files = program_data.files.borrow_mut();
     let current_file = match fns::get_current_file(program_data, &mut files)? {
         Some(v) => v,
         None => return Ok(()),
@@ -72,7 +72,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
     // render cursors
-    let cursor_place_instant = program_data.cursor_place_instant.lock().unwrap();
+    let cursor_place_instant = program_data.cursor_place_instant.borrow();
     let time_since_cursor_place = cursor_place_instant.elapsed().as_secs_f64();
     let cursor_flashing_speed = settings.cursor_flashing_speed;
     let render_cursor_lines = time_since_cursor_place % cursor_flashing_speed < cursor_flashing_speed / 2.;

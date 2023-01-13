@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 11/15/22
+// Last updated 01/13/23
 
 
 
@@ -61,25 +61,25 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     // init settings
     let settings = load_settings();
-    *program_data.settings.lock().unwrap() = Some(settings);
+    *program_data.settings.borrow_mut() = Some(settings);
 
     // sdl
-    let settings_mutex = program_data.settings.lock().unwrap();
-    let settings = settings_mutex.as_ref().unwrap();
-    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(settings);
+    let settings_ref = program_data.settings.borrow();
+    let settings = settings_ref.as_ref().unwrap();
+    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(&settings);
     let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
     let texture_creator = canvas.texture_creator();
-    drop(settings_mutex);
+    drop(settings_ref);
 
     // main init
     let (font, mut tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
-    let thread_program_data_mutex = program_data.clone();
-    let task_thread = thread::spawn(move || background_tasks::run_tasks(thread_program_data_mutex));
+    let thread_program_data = program_data.clone();
+    let task_thread = thread::spawn(move || background_tasks::run_tasks(thread_program_data));
 
     // main loop
     let mut frame_count = 0;
     let mut last_frame_count_print = Instant::now();
-    while !*program_data.exit.lock().unwrap() {
+    while !*program_data.exit.borrow() {
 
         update::update(program_data, &mut event_pump);
         render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;

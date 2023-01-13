@@ -42,7 +42,7 @@ pub fn init_sdl2 (settings: &ProgramSettings) -> (Sdl, Sdl2TtfContext, Canvas<Wi
 
 
 pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
-    let settings_mutex = program_data.settings.lock().unwrap();
+    let settings_mutex = program_data.settings.borrow();
     let settings = settings_mutex.as_ref().unwrap();
 
     let mut font_path = fns::get_program_dir();
@@ -106,10 +106,10 @@ pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCre
 
 pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
 
-    let settings = program_data.settings.lock().unwrap();
+    let settings = program_data.settings.borrow();
     let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
 
-    let mut tasks = program_data.tasks.lock().unwrap();
+    let mut tasks = program_data.tasks.borrow_mut();
     for file_path in &continue_details.last_open_files {
         tasks.push(ProgramTask::LoadFile(file_path.to_string()));
     }
