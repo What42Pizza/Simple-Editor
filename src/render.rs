@@ -8,15 +8,8 @@ use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
 
 pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
 
-    // pause tasks
-    *program_data.tasks_paused.borrow_mut() = true;
-    while *program_data.tasks_ongoing.borrow() {
-        thread::sleep(Duration::from_millis(1));
-    }
-
     // render (and resume tasks)
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
-    *program_data.tasks_paused.borrow_mut() = false;
 
     'frame_timing: {
         let settings_mutex = program_data.settings.borrow();

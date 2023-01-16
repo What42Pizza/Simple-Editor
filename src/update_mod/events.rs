@@ -157,8 +157,8 @@ pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize, program_da
 pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
-    let max_y = current_file.contents.len() - 1;
-    cursor.y = cursor.y.min(max_y - 1) + 1;
+    let max_y = current_file.contents.len() as isize - 1;
+    cursor.y = ((cursor.y as isize).min(max_y - 1) + 1) as usize;
     let max_x = current_file.contents[cursor.y].len();
     cursor.x = cursor.wanted_x.min(max_x);
     Ok(())

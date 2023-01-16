@@ -111,7 +111,7 @@ pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
 
     let mut tasks = program_data.tasks.borrow_mut();
     for file_path in &continue_details.last_open_files {
-        tasks.push(ProgramTask::LoadFile(file_path.to_string()));
+        tasks.push(ProgramTask::LoadFile{file_path: file_path.to_string(), switch_to_this: true});
     }
     drop(tasks);
 

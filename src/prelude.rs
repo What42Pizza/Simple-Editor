@@ -15,6 +15,7 @@ pub use std::{fmt, fs,
 };
 
 pub use serde_hjson::{Value, Map};
-pub use regex::Regex;
-pub use lerp::Lerp;
 pub use atomic_refcell::*;
+pub use regex::Regex;
+pub use iter_tools::*;
+pub use lerp::Lerp;

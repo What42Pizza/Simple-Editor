@@ -13,6 +13,7 @@ derive_is_enum_variant = "0.1.*"
 fmt-derive = "0.0.*"
 spin_sleep = "1.1.*"
 atomic_refcell = "0.1.9"
+iter_tools = "0.1.4"
 
 [dependencies.sdl2]
 version = "0.35.*"

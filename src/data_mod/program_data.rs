@@ -23,11 +23,6 @@ pub struct ProgramData {
     pub last_text_input_timestamp: Shared<u32>,
     
     pub tasks: Shared<Vec<ProgramTask>>,
-    pub tasks_paused: Shared<bool>,
-    pub tasks_ongoing: Shared<bool>,
-    pub frame_update_fns: Shared<Vec<FrameUpdateFns>>,
-    pub has_frame_update_task: Shared<bool>,
-    pub last_frame_updates_time: Shared<Instant>,
 
     pub files: Shared<Vec<File>>,
     pub current_file_num: Shared<Option<usize>>,
@@ -50,11 +45,6 @@ impl ProgramData {
             last_text_input_timestamp: Shared::take(0),
             
             tasks: Shared::take(vec!()),
-            tasks_paused: Shared::take(false),
-            tasks_ongoing: Shared::take(false),
-            frame_update_fns: Shared::take(vec!()),
-            has_frame_update_task: Shared::take(false),
-            last_frame_updates_time: Shared::take(Instant::now()),
 
             files: Shared::take(vec!()),
             current_file_num: Shared::take(None),
@@ -76,11 +66,6 @@ impl ProgramData {
             last_text_input_timestamp: self.last_text_input_timestamp.clone(),
             
             tasks: self.tasks.clone(),
-            tasks_paused: self.tasks_paused.clone(),
-            tasks_ongoing: self.tasks_ongoing.clone(),
-            frame_update_fns: self.frame_update_fns.clone(),
-            has_frame_update_task: self.has_frame_update_task.clone(),
-            last_frame_updates_time: self.last_frame_updates_time.clone(),
 
             files: self.files.clone(),
             current_file_num: self.current_file_num.clone(),
@@ -122,7 +107,7 @@ impl File {
             cursors: vec![
                 Cursor {
                     x: 0,
-                    y: 1,
+                    y: 0,
                     wanted_x: 0,
                     selection_start: None,
                 }
@@ -184,7 +169,7 @@ impl<T> SharedFns<T> for Shared<T> {
 
 #[derive(Debug)]
 pub enum ProgramTask {
-    LoadFile (String),
-    SaveFile (String),
-    CloseFile (String),
+    LoadFile {file_path: String, switch_to_this: bool},
+    SaveFile {file_num: usize, file_path: String},
+    CloseFile {file_num: usize},
 }

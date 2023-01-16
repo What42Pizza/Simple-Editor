@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::{path::PathBuf, fs::OpenOptions};
+use std::{path::PathBuf, fs::OpenOptions, slice::Iter, iter::Chain};
 use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
     render::{Texture, TextureCreator}
 };
@@ -65,6 +65,18 @@ pub fn some_if<T> (condition: bool, some_fn: impl FnOnce() -> T) -> Option<T> {
         None
     }
 }
+
+
+
+/*
+pub fn iter_all<T> (vecs: &Vec<Vec<T>>) -> impl Iterator<Item = &T> {
+    let mut iterator: Chain<Item = &T> = vecs[0].iter().chain(vecs[1].iter());
+    for current_vec in vecs.iter().take(2) {
+        iterator = iterator.chain(current_vec.iter());
+    }
+    iterator
+}
+*/
 
 
 
