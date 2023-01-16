@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 01/13/23
+// Last updated 01/16/23
 
 
 
@@ -46,11 +46,11 @@ use sdl2::{EventPump, event::Event, pixels::Color};
 
 fn main() {
 
-    let mut program_data = ProgramData::new();
+    let mut program_data = ProgramData::default();
 
     if let Err(error) = run_program(&mut program_data) {
         println!("\nError while running program: {}\n", error);
-        println!("\n\n\nProgram data: {:#?}\n", program_data);
+        //println!("\n\n\nProgram data: {:#?}\n", program_data);
     }
 
 }
@@ -66,7 +66,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     // sdl
     let settings_ref = program_data.settings.borrow();
     let settings = settings_ref.as_ref().unwrap();
-    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(&settings);
+    let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(settings);
     let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
     let texture_creator = canvas.texture_creator();
     drop(settings_ref);

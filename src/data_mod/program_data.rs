@@ -7,72 +7,28 @@ use sdl2::{render::Texture};
 
 
 
-type FrameUpdateFns = Box<dyn FnOnce(&ProgramData, &Duration) + Send + Sync>;
-
-#[derive(fmt_derive::Debug)]
+#[derive(fmt_derive::Debug, Clone, SmartDefault)]
 pub struct ProgramData {
 
     pub settings: Shared<Option<ProgramSettings>>,
     pub errors: Shared<Vec<Error>>,
+    pub tasks: Shared<Vec<ProgramTask>>,
+
     pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
+      #[default(Instant::now())]
     pub start_instant: Instant,
+      #[default(Shared::take(Instant::now()))]
     pub last_frame_instant: Shared<Instant>,
     pub exit: Shared<bool>,
 
     pub keys_pressed: Shared<KeysPressed>,
     pub last_text_input_timestamp: Shared<u32>,
     
-    pub tasks: Shared<Vec<ProgramTask>>,
-
     pub files: Shared<Vec<File>>,
     pub current_file_num: Shared<Option<usize>>,
+      #[default(Shared::take(Instant::now()))]
     pub cursor_place_instant: Shared<Instant>,
 
-}
-
-impl ProgramData {
-    pub fn new() -> Self {
-        Self {
-
-            settings: Shared::take(None),
-            errors: Shared::take(vec!()),
-            frame_count: Shared::take(0),
-            start_instant: Instant::now(),
-            last_frame_instant: Shared::take(Instant::now()),
-            exit: Shared::take(false),
-
-            keys_pressed: Shared::take(KeysPressed::new()),
-            last_text_input_timestamp: Shared::take(0),
-            
-            tasks: Shared::take(vec!()),
-
-            files: Shared::take(vec!()),
-            current_file_num: Shared::take(None),
-            cursor_place_instant: Shared::take(Instant::now()),
-
-        }
-    }
-    pub fn clone (&self) -> Self {
-        Self {
-
-            settings: self.settings.clone(),
-            errors: self.errors.clone(),
-            frame_count: self.frame_count.clone(),
-            start_instant: self.start_instant,
-            last_frame_instant: self.last_frame_instant.clone(),
-            exit: self.exit.clone(),
-
-            keys_pressed: self.keys_pressed.clone(),
-            last_text_input_timestamp: self.last_text_input_timestamp.clone(),
-            
-            tasks: self.tasks.clone(),
-
-            files: self.files.clone(),
-            current_file_num: self.current_file_num.clone(),
-            cursor_place_instant: self.cursor_place_instant.clone(),
-
-        }
-    }
 }
 
 
@@ -130,7 +86,7 @@ pub struct Cursor {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct KeysPressed {
     pub shift_pressed: bool,
     pub control_pressed: bool,
@@ -171,5 +127,4 @@ impl<T> SharedFns<T> for Shared<T> {
 pub enum ProgramTask {
     LoadFile {file_path: String, switch_to_this: bool},
     SaveFile {file_num: usize, file_path: String},
-    CloseFile {file_num: usize},
 }

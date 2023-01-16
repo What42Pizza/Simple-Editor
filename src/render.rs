@@ -52,7 +52,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
     // render text
     let mut files = program_data.files.borrow_mut();
-    let current_file = match fns::get_current_file(program_data, &mut files)? {
+    let current_file = match fns::get_current_file(program_data, &files)? {
         Some(v) => v,
         None => return Ok(()),
     };

@@ -34,7 +34,6 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
     match current_task {
         ProgramTask::LoadFile{file_path, switch_to_this} => load_file(&file_path, program_data)?,
         ProgramTask::SaveFile{file_num, file_path} => save_file(&file_path, program_data)?,
-        ProgramTask::CloseFile{file_num} => close_file(file_num, program_data)?,
     }
 
     Ok(())
@@ -67,12 +66,5 @@ pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
 
 pub fn save_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
     println!("wip: save file {file_path}");
-    Ok(())
-}
-
-
-
-pub fn close_file (file_num: usize, program_data: &ProgramData) -> Result<()> {
-    println!("wip: close file {file_num}");
     Ok(())
 }
