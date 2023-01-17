@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 
 
-pub fn run_tasks (program_data: ProgramData) {
+pub fn run_tasks (program_data: &ProgramData) {
     'outer: loop {
 
         // wait for tasks
@@ -14,7 +14,7 @@ pub fn run_tasks (program_data: ProgramData) {
         // run tasks
         'inner: loop {
             let current_task = program_data.tasks.borrow_mut().remove(0);
-            match process_task(current_task, &program_data) {
+            match process_task(current_task, program_data) {
                 Ok(_) => {}
                 Err(error) => {
                     program_data.errors.borrow_mut().push(error);

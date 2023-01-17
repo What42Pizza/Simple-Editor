@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 
 
-pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
+pub fn update (program_data: &ProgramData, event_pump: &mut EventPump) {
 
     handle_events(program_data, event_pump);
 
@@ -20,7 +20,7 @@ pub fn update (program_data: &mut ProgramData, event_pump: &mut EventPump) {
 
 
 
-pub fn handle_events (program_data: &mut ProgramData, event_pump: &mut EventPump) {
+pub fn handle_events (program_data: &ProgramData, event_pump: &mut EventPump) {
 
     // get list of events and re-order as needed
     let mut events = vec!();

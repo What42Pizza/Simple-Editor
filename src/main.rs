@@ -38,7 +38,7 @@ extern crate derive_is_enum_variant;
 
 
 use crate::prelude::*;
-use sdl2::{EventPump, event::Event, pixels::Color};
+use sdl2::{EventPump, event::Event, pixels::Color, render::{Canvas, TextureCreator}, video::{WindowContext, Window}, ttf::Font};
 
 
 
@@ -63,6 +63,23 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     let settings = load_settings();
     *program_data.settings.borrow_mut() = Some(settings);
 
+    // run threads
+    rayon::join(
+        || main_thread(program_data),
+        || background_tasks::run_tasks(program_data),
+    ).0?;
+
+    // finish and close
+    unwind::unwind(program_data)?;
+
+    Ok(())
+
+}
+
+
+
+fn main_thread (program_data: &ProgramData) -> Result<()> {//}, canvas: Canvas<Window>, textures: ProgramTextures, texture_creator: TextureCreator<WindowContext>, font: Font, event_pump: EventPump) -> Result<()> {
+
     // sdl
     let settings_ref = program_data.settings.borrow();
     let settings = settings_ref.as_ref().unwrap();
@@ -72,17 +89,14 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
     drop(settings_ref);
 
     // main init
-    let (font, mut tetuxres) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
-    let thread_program_data = program_data.clone();
-    let task_thread = thread::spawn(move || background_tasks::run_tasks(thread_program_data));
-
-    // main loop
+    let (font, mut textures) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
+    
     let mut frame_count = 0;
     let mut last_frame_count_print = Instant::now();
     while !*program_data.exit.borrow() {
 
-        update::update(program_data, &mut event_pump);
-        render::render(&mut canvas, program_data, &mut tetuxres, &texture_creator, &font)?;
+        update::update(&program_data, &mut event_pump);
+        render::render(&mut canvas, program_data, &mut textures, &texture_creator, &font)?;
 
         frame_count += 1;
         if last_frame_count_print.elapsed().as_secs_f64() > 1. {
@@ -92,9 +106,6 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
         }
 
     }
-
-    // finish and close
-    unwind::unwind(program_data, task_thread)?;
 
     Ok(())
 

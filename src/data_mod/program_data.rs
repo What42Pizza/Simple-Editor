@@ -7,27 +7,27 @@ use sdl2::{render::Texture};
 
 
 
-#[derive(fmt_derive::Debug, Clone, SmartDefault)]
+#[derive(fmt_derive::Debug, SmartDefault)]
 pub struct ProgramData {
 
-    pub settings: Shared<Option<ProgramSettings>>,
-    pub errors: Shared<Vec<Error>>,
-    pub tasks: Shared<Vec<ProgramTask>>,
+    pub settings: AtomicRefCell<Option<ProgramSettings>>,
+    pub errors: AtomicRefCell<Vec<Error>>,
+    pub tasks: AtomicRefCell<Vec<ProgramTask>>,
 
-    pub frame_count: Shared<u32>, // overflows after ~10,000 hours at 120 fps
+    pub frame_count: AtomicRefCell<u32>, // overflows after ~10,000 hours at 120 fps
       #[default(Instant::now())]
     pub start_instant: Instant,
-      #[default(Shared::take(Instant::now()))]
-    pub last_frame_instant: Shared<Instant>,
-    pub exit: Shared<bool>,
+      #[default(AtomicRefCell::new(Instant::now()))]
+    pub last_frame_instant: AtomicRefCell<Instant>,
+    pub exit: AtomicRefCell<bool>,
 
-    pub keys_pressed: Shared<KeysPressed>,
-    pub last_text_input_timestamp: Shared<u32>,
+    pub keys_pressed: AtomicRefCell<KeysPressed>,
+    pub last_text_input_timestamp: AtomicRefCell<u32>,
     
-    pub files: Shared<Vec<File>>,
-    pub current_file_num: Shared<Option<usize>>,
-      #[default(Shared::take(Instant::now()))]
-    pub cursor_place_instant: Shared<Instant>,
+    pub files: AtomicRefCell<Vec<File>>,
+    pub current_file_num: AtomicRefCell<Option<usize>>,
+      #[default(AtomicRefCell::new(Instant::now()))]
+    pub cursor_place_instant: AtomicRefCell<Instant>,
 
 }
 
@@ -100,22 +100,6 @@ impl KeysPressed {
             control_pressed: false,
             alt_pressed: false,
         }
-    }
-}
-
-
-
-
-
-pub type Shared<T> = Arc<AtomicRefCell<T>>;
-
-pub trait SharedFns<T> {
-    fn take (v: T) -> Self;
-}
-
-impl<T> SharedFns<T> for Shared<T> {
-    fn take (v: T) -> Self {
-        Arc::new(AtomicRefCell::new(v))
     }
 }
 

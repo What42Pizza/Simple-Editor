@@ -41,7 +41,7 @@ pub fn init_sdl2 (settings: &ProgramSettings) -> (Sdl, Sdl2TtfContext, Canvas<Wi
 
 
 
-pub fn init_program_data<'a> (program_data: &mut ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
+pub fn init_program_data<'a> (program_data: &ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
     let settings_mutex = program_data.settings.borrow();
     let settings = settings_mutex.as_ref().unwrap();
 
@@ -104,7 +104,7 @@ pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCre
 
 
 
-pub fn continue_session (program_data: &mut ProgramData) -> Result<()> {
+pub fn continue_session (program_data: &ProgramData) -> Result<()> {
 
     let settings = program_data.settings.borrow();
     let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
