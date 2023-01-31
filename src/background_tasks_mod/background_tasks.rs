@@ -6,22 +6,22 @@ pub fn run_tasks (program_data: &ProgramData) {
     'outer: loop {
 
         // wait for tasks
-        while program_data.tasks.borrow().is_empty() {
+        while program_data.tasks.read().is_empty() {
             thread::sleep(Duration::from_millis(10));
-            if *program_data.exit.borrow() {break 'outer;}
+            if *program_data.exit.read() {break 'outer;}
         }
 
         // run tasks
         'inner: loop {
-            let current_task = program_data.tasks.borrow_mut().remove(0);
+            let current_task = program_data.tasks.write().remove(0);
             match process_task(current_task, program_data) {
                 Ok(_) => {}
                 Err(error) => {
-                    program_data.errors.borrow_mut().push(error);
+                    program_data.errors.write().push(error);
                 }
             }
-            if *program_data.exit.borrow() {break 'outer;}
-            if program_data.tasks.borrow().is_empty() {break 'inner;}
+            if *program_data.exit.read() {break 'outer;}
+            if program_data.tasks.read().is_empty() {break 'inner;}
         }
 
     }
@@ -50,9 +50,9 @@ pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
         .err_details_lazy(|| "Failed to read file \"".to_string() + file_path + "\"")?;
     let contents = fns::split_lines(&contents);
     let new_file = File::new(file_path.to_string(), contents);
-    program_data.files.borrow_mut().push(new_file);
+    program_data.files.write().push(new_file);
 
-    let mut curent_file = program_data.current_file_num.borrow_mut();
+    let mut curent_file = program_data.current_file_num.write();
     if curent_file.is_none() {
         *curent_file = Some(0);
     }

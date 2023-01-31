@@ -10,24 +10,24 @@ use sdl2::{render::Texture};
 #[derive(fmt_derive::Debug, SmartDefault)]
 pub struct ProgramData {
 
-    pub settings: AtomicRefCell<Option<ProgramSettings>>,
-    pub errors: AtomicRefCell<Vec<Error>>,
-    pub tasks: AtomicRefCell<Vec<ProgramTask>>,
+    pub settings: RwLock<Option<ProgramSettings>>,
+    pub errors: RwLock<Vec<Error>>,
+    pub tasks: RwLock<Vec<ProgramTask>>,
 
-    pub frame_count: AtomicRefCell<u32>, // overflows after ~10,000 hours at 120 fps
+    pub frame_count: RwLock<u32>, // overflows after ~10,000 hours at 120 fps
       #[default(Instant::now())]
     pub start_instant: Instant,
-      #[default(AtomicRefCell::new(Instant::now()))]
-    pub last_frame_instant: AtomicRefCell<Instant>,
-    pub exit: AtomicRefCell<bool>,
+      #[default(RwLock::new(Instant::now()))]
+    pub last_frame_instant: RwLock<Instant>,
+    pub exit: RwLock<bool>,
 
-    pub keys_pressed: AtomicRefCell<KeysPressed>,
-    pub last_text_input_timestamp: AtomicRefCell<u32>,
+    pub keys_pressed: RwLock<KeysPressed>,
+    pub last_text_input_timestamp: RwLock<u32>,
     
-    pub files: AtomicRefCell<Vec<File>>,
-    pub current_file_num: AtomicRefCell<Option<usize>>,
-      #[default(AtomicRefCell::new(Instant::now()))]
-    pub cursor_place_instant: AtomicRefCell<Instant>,
+    pub files: RwLock<Vec<File>>,
+    pub current_file_num: RwLock<Option<usize>>,
+      #[default(RwLock::new(Instant::now()))]
+    pub cursor_place_instant: RwLock<Instant>,
 
 }
 

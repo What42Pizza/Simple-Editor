@@ -12,16 +12,16 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
 
     'frame_timing: {
-        let settings_mutex = program_data.settings.borrow();
+        let settings_mutex = program_data.settings.read();
         if let FrameTimingSetting::Maxxed(mut max_frame_time) = settings_mutex.as_ref().unwrap().frame_timing {
             max_frame_time *= 1000;
-            let elapsed_time = program_data.last_frame_instant.borrow().elapsed().as_micros() as usize;
+            let elapsed_time = program_data.last_frame_instant.read().elapsed().as_micros() as usize;
             if elapsed_time > max_frame_time {break 'frame_timing;}
             let time_to_sleep = max_frame_time - elapsed_time;
             spin_sleep::sleep(Duration::from_micros(time_to_sleep as u64));
         }
     }
-    *program_data.last_frame_instant.borrow_mut() = Instant::now();
+    *program_data.last_frame_instant.write() = Instant::now();
 
     canvas.present();
     Ok(())
@@ -35,7 +35,7 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &
 pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
 
     // get data
-    let settings_mutex = program_data.settings.borrow();
+    let settings_mutex = program_data.settings.read();
     let settings = settings_mutex.as_ref().expect("Error: settings is none");
     let (width, height) = canvas.output_size().to_custom_err()?;
     let buttons_bottom_y = div(height, 20.);
@@ -51,7 +51,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
     // render text
-    let mut files = program_data.files.borrow_mut();
+    let mut files = program_data.files.write();
     let current_file = match fns::get_current_file(program_data, &files)? {
         Some(v) => v,
         None => return Ok(()),
@@ -65,7 +65,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
     // render cursors
-    let cursor_place_instant = program_data.cursor_place_instant.borrow();
+    let cursor_place_instant = program_data.cursor_place_instant.read();
     let time_since_cursor_place = cursor_place_instant.elapsed().as_secs_f64();
     let cursor_flashing_speed = settings.cursor_flashing_speed;
     let render_cursor_lines = time_since_cursor_place % cursor_flashing_speed < cursor_flashing_speed / 2.;

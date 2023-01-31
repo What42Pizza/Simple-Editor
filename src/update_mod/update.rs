@@ -8,14 +8,14 @@ pub fn update (program_data: &ProgramData, event_pump: &mut EventPump) {
 
     handle_events(program_data, event_pump);
 
-    let mut errors = program_data.errors.borrow();
+    let mut errors = program_data.errors.read();
     for error in errors.iter() {
         println!("ERROR: {error}");
     }
     drop(errors);
-    program_data.errors.borrow_mut().clear();
+    program_data.errors.write().clear();
 
-    *program_data.frame_count.borrow_mut() += 1;
+    *program_data.frame_count.write() += 1;
 }
 
 

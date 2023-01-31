@@ -15,7 +15,7 @@ pub use std::{fmt, fs,
 };
 
 pub use serde_hjson::{Value, Map};
-pub use atomic_refcell::*;
+pub use parking_lot::*;
 pub use regex::Regex;
 pub use smart_default::SmartDefault;
 pub use iter_tools::*;

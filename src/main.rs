@@ -61,7 +61,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
     // init settings
     let settings = load_settings();
-    *program_data.settings.borrow_mut() = Some(settings);
+    *program_data.settings.write() = Some(settings);
 
     // run threads
     rayon::join(
@@ -81,7 +81,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 fn main_thread (program_data: &ProgramData) -> Result<()> {//}, canvas: Canvas<Window>, textures: ProgramTextures, texture_creator: TextureCreator<WindowContext>, font: Font, event_pump: EventPump) -> Result<()> {
 
     // sdl
-    let settings_ref = program_data.settings.borrow();
+    let settings_ref = program_data.settings.read();
     let settings = settings_ref.as_ref().unwrap();
     let (sdl_context, ttf_context, mut canvas) = init::init_sdl2(settings);
     let mut event_pump = sdl_context.event_pump().expect("Could not retrieve event pump");
@@ -91,9 +91,10 @@ fn main_thread (program_data: &ProgramData) -> Result<()> {//}, canvas: Canvas<W
     // main init
     let (font, mut textures) = init::init_program_data(program_data, &texture_creator, &ttf_context)?;
     
+    // main loop
     let mut frame_count = 0;
     let mut last_frame_count_print = Instant::now();
-    while !*program_data.exit.borrow() {
+    while !*program_data.exit.read() {
 
         update::update(&program_data, &mut event_pump);
         render::render(&mut canvas, program_data, &mut textures, &texture_creator, &font)?;

@@ -160,10 +160,10 @@ pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, full_key: &
 
 
 
-pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a AtomicRefMut<Vec<File>>) -> Result<Option<&'a File>> {
+pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a File>> {
 
     // get file num
-    let current_file_num_mutex = program_data.current_file_num.borrow();
+    let current_file_num_mutex = program_data.current_file_num.read();
     let Some(current_file_num) = *current_file_num_mutex else {return Ok(None);};
     drop(current_file_num_mutex);
 
@@ -183,10 +183,10 @@ pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a AtomicRefMut
 
 
 
-pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut AtomicRefMut<Vec<File>>) -> Result<Option<&'a mut File>> {
+pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a mut File>> {
 
     // get file num
-    let current_file_num_mutex = program_data.current_file_num.borrow();
+    let current_file_num_mutex = program_data.current_file_num.read();
     let Some(current_file_num) = *current_file_num_mutex else {return Ok(None);};
     drop(current_file_num_mutex);
 
