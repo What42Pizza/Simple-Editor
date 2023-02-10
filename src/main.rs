@@ -1,5 +1,5 @@
 // Started 10/21/22
-// Last updated 01/16/23
+// Last updated 02/10/23
 
 
 
@@ -28,17 +28,13 @@ mod init;
 mod unwind;
 mod background_tasks_mod;
 mod data_mod;
+mod additions;
 mod fns;
 
 
 
-#[macro_use]
-extern crate derive_is_enum_variant;
-
-
-
 use crate::prelude::*;
-use sdl2::{EventPump, event::Event, pixels::Color, render::{Canvas, TextureCreator}, video::{WindowContext, Window}, ttf::Font};
+use sdl2::{EventPump, event::Event};
 
 
 
@@ -49,7 +45,7 @@ fn main() {
     let mut program_data = ProgramData::default();
 
     if let Err(error) = run_program(&mut program_data) {
-        println!("\nError while running program: {}\n", error);
+        println!("\nError while running program: {:?}\n", error);
         //println!("\n\n\nProgram data: {:#?}\n", program_data);
     }
 
@@ -57,7 +53,7 @@ fn main() {
 
 
 
-fn run_program (program_data: &mut ProgramData) -> Result<()> {
+fn run_program (program_data: &mut ProgramData) -> Result<(), ProgramError> {
 
     // init settings
     let settings = load_settings();
@@ -78,7 +74,7 @@ fn run_program (program_data: &mut ProgramData) -> Result<()> {
 
 
 
-fn main_thread (program_data: &ProgramData) -> Result<()> {//}, canvas: Canvas<Window>, textures: ProgramTextures, texture_creator: TextureCreator<WindowContext>, font: Font, event_pump: EventPump) -> Result<()> {
+fn main_thread (program_data: &ProgramData) -> Result<(), ProgramError> {//}, canvas: Canvas<Window>, textures: ProgramTextures, texture_creator: TextureCreator<WindowContext>, font: Font, event_pump: EventPump) -> Result<()> {
 
     // sdl
     let settings_ref = program_data.settings.read();
@@ -96,7 +92,7 @@ fn main_thread (program_data: &ProgramData) -> Result<()> {//}, canvas: Canvas<W
     let mut last_frame_count_print = Instant::now();
     while !*program_data.exit.read() {
 
-        update::update(&program_data, &mut event_pump);
+        update::update(&program_data, &mut event_pump)?;
         render::render(&mut canvas, program_data, &mut textures, &texture_creator, &font)?;
 
         frame_count += 1;

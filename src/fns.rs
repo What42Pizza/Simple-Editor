@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::{path::PathBuf, fs::OpenOptions, slice::Iter, iter::Chain};
+use std::{path::PathBuf, fs::OpenOptions};
 use sdl2::{rect::Rect, pixels::Color, surface::Surface, video::WindowContext,
     render::{Texture, TextureCreator}
 };
@@ -30,13 +30,13 @@ pub fn get_program_dir() -> PathBuf {
 
 
 
-pub fn get_file_exists (path: &PathBuf) -> Result<bool> {
+pub fn get_file_exists (path: &PathBuf) -> Result<bool, IoError> {
     let file = OpenOptions::new().read(true).open(path);
     if file.is_ok() {return Ok(true);}
     let err = file.unwrap_err();
     match err.kind() {
         std::io::ErrorKind::NotFound => Ok(false),
-        _ => Err(err.into()),
+        _ => Err(err),
     }
 }
 
@@ -114,10 +114,8 @@ pub fn blend_colors (color1: Color, color2: Color, blend_amount: f64) -> Color {
 
 
 
-pub fn get_empty_texture (texture_creator: &TextureCreator<WindowContext>) -> Result<Texture<'_>> {
-    texture_creator
-        .create_texture_from_surface(Surface::new(1, 1, sdl2::pixels::PixelFormatEnum::ARGB8888).unwrap())
-        .to_custom_err()
+pub fn get_empty_texture (texture_creator: &TextureCreator<WindowContext>) -> Result<Texture<'_>, ProgramError> {
+    texture_creator.create_texture_from_surface(Surface::new(1, 1, sdl2::pixels::PixelFormatEnum::ARGB8888).unwrap()).map_err(|e| e.into())
 }
 
 
@@ -160,7 +158,7 @@ pub fn get_hjson_value<'a> (starting_object: &'a Map<String, Value>, full_key: &
 
 
 
-pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a File>> {
+pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a File>, ProgramError> {
 
     // get file num
     let current_file_num_mutex = program_data.current_file_num.read();
@@ -169,12 +167,10 @@ pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a RwLockWriteG
 
     // get file or return err
     if current_file_num >= files.len() {
-        let error_details = match files.len() {
-            0=> "Current file num is ".to_string() + &current_file_num.to_string() + " but there no files open",
-            1 => "Current file num is ".to_string() + &current_file_num.to_string() + " but there is only 1 file open",
-            _ => "Current file num is ".to_string() + &current_file_num.to_string() + " but there are only " + &files.len().to_string() + " files open",
-        };
-        return err("InvalidFileNum", &error_details);
+        return err(RawProgramError::InvalidFileIndex {
+            file_index: current_file_num,
+            num_of_files: files.len(),
+        });
     }
 
     Ok(Some(&files[current_file_num]))
@@ -183,7 +179,7 @@ pub fn get_current_file<'a> (program_data: &ProgramData, files: &'a RwLockWriteG
 
 
 
-pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a mut File>> {
+pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut RwLockWriteGuard<Vec<File>>) -> Result<Option<&'a mut File>, ProgramError> {
 
     // get file num
     let current_file_num_mutex = program_data.current_file_num.read();
@@ -192,12 +188,10 @@ pub fn get_current_file_mut<'a> (program_data: &ProgramData, files: &'a mut RwLo
 
     // get file or return err
     if current_file_num >= files.len() {
-        let error_details = match files.len() {
-            0=> "Current file num is ".to_string() + &current_file_num.to_string() + " but there no files open",
-            1 => "Current file num is ".to_string() + &current_file_num.to_string() + " but there is only 1 file open",
-            _ => "Current file num is ".to_string() + &current_file_num.to_string() + " but there are only " + &files.len().to_string() + " files open",
-        };
-        return err("InvalidFileNum", &error_details);
+        return err(RawProgramError::InvalidFileIndex {
+            file_index: current_file_num,
+            num_of_files: files.len(),
+        });
     }
 
     Ok(Some(&mut files[current_file_num]))

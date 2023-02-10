@@ -29,7 +29,7 @@ pub fn run_tasks (program_data: &ProgramData) {
 
 
 
-pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> Result<()> {
+pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> Result<(), ProgramError> {
 
     match current_task {
         ProgramTask::LoadFile{file_path, switch_to_this} => load_file(&file_path, program_data)?,
@@ -43,11 +43,16 @@ pub fn process_task (current_task: ProgramTask, program_data: &ProgramData) -> R
 
 
 
-pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
+pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<(), ProgramError> {
     println!("Loading files {file_path}");
 
-    let contents = fs::read_to_string(file_path)
-        .err_details_lazy(|| "Failed to read file \"".to_string() + file_path + "\"")?;
+    let contents = match fs::read_to_string(file_path) {
+        Ok(v) => v,
+        Err(error) => return err(RawProgramError::CouldNotLoadFile {
+            file_path: file_path.to_string(),
+            source: error,
+        }),
+    };
     let contents = fns::split_lines(&contents);
     let new_file = File::new(file_path.to_string(), contents);
     program_data.files.write().push(new_file);
@@ -64,7 +69,7 @@ pub fn load_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
 
 
 
-pub fn save_file (file_path: &str, program_data: &ProgramData) -> Result<()> {
+pub fn save_file (file_path: &str, program_data: &ProgramData) -> Result<(), ProgramError> {
     println!("wip: save file {file_path}");
     Ok(())
 }

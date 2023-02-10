@@ -1,20 +1,20 @@
 pub use crate::{*,
     update_mod::update,
     background_tasks_mod::background_tasks,
-    update_mod::{events},
-    data_mod::{program_data::*, settings::*,
-        errors::{*, Result::*}
-    },
+    update_mod::events,
+    additions::*,
+    data_mod::{program_data::*, settings::*, errors::*},
 };
 
 pub use std::{fmt, fs,
     result::Result as stdResult,
+    io::{Error as IoError, ErrorKind as IoErrorKind},
     thread::{self, JoinHandle},
     time::{Duration, Instant},
     sync::{Arc, Mutex, MutexGuard},
 };
 
-pub use serde_hjson::{Value, Map};
+pub use serde_hjson::{Value, Map, Error as SerdeError};
 pub use parking_lot::*;
 pub use regex::Regex;
 pub use smart_default::SmartDefault;

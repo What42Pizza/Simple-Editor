@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crate::prelude::*;
 use sdl2::{render::Texture};
 
@@ -11,7 +9,7 @@ use sdl2::{render::Texture};
 pub struct ProgramData {
 
     pub settings: RwLock<Option<ProgramSettings>>,
-    pub errors: RwLock<Vec<Error>>,
+    pub errors: RwLock<Vec<ProgramError>>,
     pub tasks: RwLock<Vec<ProgramTask>>,
 
     pub frame_count: RwLock<u32>, // overflows after ~10,000 hours at 120 fps

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use sdl2::{Sdl, pixels::Color,
-    image::{self, LoadTexture, InitFlag},
+    image::{self, InitFlag},
     render::{Canvas, TextureCreator, Texture},
     video::{Window, WindowContext},
     ttf::{Sdl2TtfContext, Font}
@@ -41,13 +41,13 @@ pub fn init_sdl2 (settings: &ProgramSettings) -> (Sdl, Sdl2TtfContext, Canvas<Wi
 
 
 
-pub fn init_program_data<'a> (program_data: &ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>)> {
+pub fn init_program_data<'a> (program_data: &ProgramData, texture_creator: &'a TextureCreator<WindowContext>, ttf_context: &'a Sdl2TtfContext) -> Result<(Font<'a, 'a>, ProgramTextures<'a>), ProgramError> {
     let settings_mutex = program_data.settings.read();
     let settings = settings_mutex.as_ref().unwrap();
 
     let mut font_path = fns::get_program_dir();
     font_path.push(&settings.font_path);
-    let font = ttf_context.load_font(font_path, settings.font_size as u16).to_custom_err()?;
+    let font = ttf_context.load_font(font_path, settings.font_size as u16)?;
 
     let textures = load_textures(&font, texture_creator)?;
 
@@ -60,7 +60,7 @@ pub fn init_program_data<'a> (program_data: &ProgramData, texture_creator: &'a T
 
 
 
-pub fn load_textures<'a> (font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>> {
+pub fn load_textures<'a> (font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<ProgramTextures<'a>, ProgramError> {
 
     // render chars
     let mut ascii_chars = vec!();
@@ -76,15 +76,7 @@ pub fn load_textures<'a> (font: &Font, texture_creator: &'a TextureCreator<Windo
 
 
 
-pub fn load_texture<'a> (texture_name: &str, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>> {
-    Ok(texture_creator.load_texture(texture_name)
-        .err_details_lazy(|| ("  Texture: \"".to_string() + texture_name + "\""))?
-    )
-}
-
-
-
-pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>> {
+pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>, ProgramError> {
     if char as u32 == 0 {
         return fns::get_empty_texture(texture_creator);
     }
@@ -95,19 +87,17 @@ pub fn render_char<'a> (char: char, font: &Font, texture_creator: &'a TextureCre
         stdResult::Ok(v) => v,
         stdResult::Err(_) => return fns::get_empty_texture(texture_creator),
     };
-    texture_creator
-        .create_texture_from_surface(char_surface)
-        .to_custom_err()
+    texture_creator.create_texture_from_surface(char_surface).map_err(|e| e.into())
 }
 
 
 
 
 
-pub fn continue_session (program_data: &ProgramData) -> Result<()> {
+pub fn continue_session (program_data: &ProgramData) -> Result<(), ProgramError> {
 
     let settings = program_data.settings.read();
-    let continue_details = &settings.none_err("ContinueSessionError", "Settings is none")?.continue_details;
+    let continue_details = &settings.as_ref().expect("Settings cannot be None when calling 'init::continue_session'").continue_details;
 
     let mut tasks = program_data.tasks.write();
     for file_path in &continue_details.last_open_files {

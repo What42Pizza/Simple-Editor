@@ -4,23 +4,25 @@ use crate::prelude::*;
 
 
 
-pub fn update (program_data: &ProgramData, event_pump: &mut EventPump) {
+pub fn update (program_data: &ProgramData, event_pump: &mut EventPump) -> Result<(), ProgramError> {
 
-    handle_events(program_data, event_pump);
+    handle_events(program_data, event_pump)?;
 
-    let mut errors = program_data.errors.read();
+    let errors = program_data.errors.read();
     for error in errors.iter() {
-        println!("ERROR: {error}");
+        println!("ERROR: {error:?}");
     }
     drop(errors);
     program_data.errors.write().clear();
 
     *program_data.frame_count.write() += 1;
+
+    Ok(())
 }
 
 
 
-pub fn handle_events (program_data: &ProgramData, event_pump: &mut EventPump) {
+pub fn handle_events (program_data: &ProgramData, event_pump: &mut EventPump) -> Result<(), ProgramError> {
 
     // get list of events and re-order as needed
     let mut events = vec!();
@@ -34,7 +36,8 @@ pub fn handle_events (program_data: &ProgramData, event_pump: &mut EventPump) {
 
     // handle events (in correct order)
     for event in chain!(text_input_events, events) {
-        events::handle_event(event, program_data);
+        events::handle_event(event, program_data)?;
     }
 
+    Ok(())
 }

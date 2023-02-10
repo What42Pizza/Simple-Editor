@@ -3,9 +3,9 @@ use sdl2::{event::Event, keyboard::Keycode};
 
 
 
-pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
+pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut files = program_data.files.write();
-    let mut current_file = fns::get_current_file_mut(program_data, &mut files)?;
+    let current_file = fns::get_current_file_mut(program_data, &mut files)?;
     match event {
 
         Event::Quit {..}  => {
@@ -27,7 +27,7 @@ pub fn handle_event (event: Event, program_data: &ProgramData) -> Result<()> {
 
 
 
-pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: Option<&mut File>, timestamp: u32) -> Result<()> {
+pub fn handle_key_down (keycode: Keycode, _repeat: bool, program_data: &ProgramData, current_file: Option<&mut File>, timestamp: u32) -> Result<(), ProgramError> {
     if timestamp == *program_data.last_text_input_timestamp.read() {return Ok(());}
     match keycode {
 
@@ -76,8 +76,8 @@ pub fn handle_key_down (keycode: Keycode, repeat: bool, program_data: &ProgramDa
 
 
 
-pub fn handle_key_up (keycode: Keycode, repeat: bool, program_data: &ProgramData, current_file: Option<&mut File>) -> Result<()> {
-    let Some(current_file) = current_file else {return Ok(());};
+pub fn handle_key_up (keycode: Keycode, _repeat: bool, program_data: &ProgramData, current_file: Option<&mut File>) -> Result<(), ProgramError> {
+    let Some(_current_file) = current_file else {return Ok(());};
     match keycode {
 
         Keycode::LShift | Keycode::RShift => {
@@ -102,7 +102,7 @@ pub fn handle_key_up (keycode: Keycode, repeat: bool, program_data: &ProgramData
 
 
 
-pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<()> {
+pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<(), ProgramError> {
     *program_data.exit.write() = true;
     Ok(())
 }
@@ -111,7 +111,7 @@ pub fn handle_esc_pressed (program_data: &ProgramData) -> Result<()> {
 
 
 
-pub fn run_fn_at_cursors (cursor_fn: impl Fn(&mut File, usize, &ProgramData) -> Result<()>, program_data: &ProgramData, current_file: &mut File) -> Result<()> {
+pub fn run_fn_at_cursors (cursor_fn: impl Fn(&mut File, usize, &ProgramData) -> Result<(), ProgramError>, program_data: &ProgramData, current_file: &mut File) -> Result<(), ProgramError> {
     for i in 0..current_file.cursors.len() {
         cursor_fn(current_file, i, program_data)?
     }
@@ -126,7 +126,6 @@ pub fn remove_cursor_duplicates (cursors: &mut Vec<Cursor>) {
     // this is O(n^2), but it should be fine
     let mut cursors_to_remove = vec!();
     for (i, cursor_1) in cursors.iter().enumerate() {
-        let cursor_1 = &cursors[i];
         'inner: for cursor_2 in cursors.iter().skip(i + 1) {
             if cursor_1.x == cursor_2.x && cursor_1.y == cursor_2.y {
                 cursors_to_remove.push(i);
@@ -143,7 +142,7 @@ pub fn remove_cursor_duplicates (cursors: &mut Vec<Cursor>) {
 
 
 
-pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
     cursor.y = cursor.y.max(1) - 1;
@@ -154,7 +153,7 @@ pub fn move_cursor_up_fn (current_file: &mut File, cursor_num: usize, program_da
 
 
 
-pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
     let max_y = current_file.contents.len() as isize - 1;
@@ -166,7 +165,7 @@ pub fn move_cursor_down_fn (current_file: &mut File, cursor_num: usize, program_
 
 
 
-pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
     'main: {
@@ -184,7 +183,7 @@ pub fn move_cursor_left_fn (current_file: &mut File, cursor_num: usize, program_
 
 
 
-pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
     let max_x = current_file.contents[cursor.y].len();
@@ -203,7 +202,7 @@ pub fn move_cursor_right_fn (current_file: &mut File, cursor_num: usize, program
 
 
 
-pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn move_cursor_end_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     handle_cursor_selection_on_move(cursor, program_data);
     let max_x = current_file.contents[cursor.y].len();
@@ -228,7 +227,7 @@ pub fn handle_cursor_selection_on_move (cursor: &mut Cursor, program_data: &Prog
 
 
 
-pub fn backspace_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn backspace_fn (current_file: &mut File, cursor_num: usize, _program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     'main: {
@@ -258,7 +257,7 @@ pub fn backspace_fn (current_file: &mut File, cursor_num: usize, program_data: &
 
 
 
-pub fn delete_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn delete_fn (current_file: &mut File, cursor_num: usize, _program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
@@ -283,7 +282,7 @@ pub fn delete_fn (current_file: &mut File, cursor_num: usize, program_data: &Pro
 
 
 
-pub fn return_fn (current_file: &mut File, cursor_num: usize, program_data: &ProgramData) -> Result<()> {
+pub fn return_fn (current_file: &mut File, cursor_num: usize, _program_data: &ProgramData) -> Result<(), ProgramError> {
     let mut cursor = &mut current_file.cursors[cursor_num];
     let contents = &mut current_file.contents;
     let current_line = &mut contents[cursor.y];
@@ -309,9 +308,9 @@ pub fn delete_selected_area (contents: &mut [Vec<char>], cursor: &Cursor) {
 
 
 
-fn handle_text_input (text: &str, program_data: &ProgramData, current_file: Option<&mut File>, timestamp: u32) -> Result<()> {
+fn handle_text_input (text: &str, program_data: &ProgramData, current_file: Option<&mut File>, timestamp: u32) -> Result<(), ProgramError> {
     let Some(current_file) = current_file else {return Ok(());};
-    let place_text_fn = |file: &mut File, cursor_num: usize, program_data: &ProgramData| {
+    let place_text_fn = |file: &mut File, cursor_num: usize, _program_data: &ProgramData| {
         let cursor: &mut Cursor = &mut file.cursors[cursor_num];
         let current_line = &mut file.contents[cursor.y];
         let text_chars = text.chars().collect::<Vec<char>>();

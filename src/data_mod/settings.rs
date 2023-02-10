@@ -105,7 +105,7 @@ pub fn load_settings() -> ProgramSettings {
         Ok(v) => v,
         Err(error) => {
             println!("Warning: no settings file found, loading default settings...");
-            println!("Error: {}", error);
+            println!("Error: {:?}", error);
             return default_settings;
         }
     };
@@ -118,7 +118,7 @@ pub fn load_settings() -> ProgramSettings {
         }
     };
 
-    process_settings(&raw_settings, &default_settings).unwrap_or(|e| {
+    process_settings(&raw_settings, &default_settings).unwrap_or_else(|e| {
         println!("Warning: could not deserialize existing settings, loading default settings...");
         println!("Error: {:#?}", e);
         default_settings
@@ -128,8 +128,8 @@ pub fn load_settings() -> ProgramSettings {
 
 
 
-fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
-    let settings = serde_hjson::from_str(raw_settings).to_custom_err()?;
+fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> Result<ProgramSettings, ProgramError> {
+    let settings = serde_hjson::from_str(raw_settings)?;
     let settings = update_settings(settings)?;
     let settings = get_settings_from_hjson(settings, default_settings)?;
     Ok(settings)
@@ -137,20 +137,26 @@ fn process_settings (raw_settings: &str, default_settings: &ProgramSettings) -> 
 
 
 
-pub fn load_raw_settings() -> Result<Option<String>> {
+pub fn load_raw_settings() -> Result<Option<String>, ProgramError> {
 
     let mut settings_path = fns::get_program_dir();
     settings_path.push("settings.hjson");
-    if !fns::get_file_exists(&settings_path)
-        .err_details("Could not query location of settings file")
-        .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?
-    {
-        return Ok(None);
-    }
+    match fns::get_file_exists(&settings_path) {
+        Ok(false) => return Ok(None),
+        Ok(true) => {},
+        Err(error) => return err(RawProgramError::CouldNotLoadFile {
+            file_path: settings_path.to_string_lossy().to_string(),
+            source: error,
+        }),
+    };
 
-    let raw_settings = fs::read_to_string(&settings_path)
-        .err_details("Could not read settings file")
-        .err_details_lazy(|| "  Path: ".to_string() + &settings_path.as_path().to_string_lossy())?;
+    let raw_settings = match fs::read_to_string(&settings_path) {
+        Ok(v) => v,
+        Err(error) => return err(RawProgramError::CouldNotLoadFile {
+            file_path: settings_path.to_string_lossy().to_string(),
+            source: error,
+        }),
+    };
 
     Ok(Some(raw_settings))
 
@@ -158,9 +164,9 @@ pub fn load_raw_settings() -> Result<Option<String>> {
 
 
 
-pub fn update_settings (settings: Value) -> Result<Map<String, Value>> {
+pub fn update_settings (settings: Value) -> Result<Map<String, Value>, ProgramError> {
     
-    if !settings.is_object() {return err("LoadSettingsError", "Settings file is not an hjson object");}
+    if !settings.is_object() {return err(RawProgramError::SettingsAreNotAnObject);}
     let settings: &mut Map<String, Value> = &mut settings.as_object().unwrap().to_owned();
 
     let settings_version = match get_setting_defaultless(settings, "settings version", Value::as_u64, "u64") {
@@ -187,7 +193,7 @@ pub fn update_settings (settings: Value) -> Result<Map<String, Value>> {
 
 
 
-fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &ProgramSettings) -> Result<ProgramSettings> {
+fn get_settings_from_hjson (settings: Map<String, Value>, default_settings: &ProgramSettings) -> Result<ProgramSettings, ProgramError> {
 
     let frame_timing = match get_setting_borrowed(&settings, "frame timing/type", Value::as_str, "string", &default_settings.frame_timing.get_type()) {
         "vsync" => FrameTimingSetting::VSync,

@@ -6,7 +6,7 @@ use sdl2::{video::WindowContext, ttf::Font, pixels::Color,
 
 
 
-pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
+pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<(), ProgramError> {
 
     // render (and resume tasks)
     prepare_canvas(canvas, program_data, textures, texture_creator, font)?;
@@ -32,12 +32,12 @@ pub fn render(canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &
 
 
 
-pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<()> {
+pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, textures: &mut ProgramTextures<'_>, texture_creator: &TextureCreator<WindowContext>, font: &Font) -> Result<(), ProgramError> {
 
     // get data
     let settings_mutex = program_data.settings.read();
     let settings = settings_mutex.as_ref().expect("Error: settings is none");
-    let (width, height) = canvas.output_size().to_custom_err()?;
+    let (width, height) = canvas.output_size()?;
     let buttons_bottom_y = div(height, 20.);
 
     // clear
@@ -47,18 +47,18 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
     // render top buttons
     canvas.set_draw_color(fns::blend_colors(settings.background_color, Color::RGB(0, 0, 0), 0.5));
-    canvas.draw_line(Point::new(0, buttons_bottom_y as i32), Point::new(width as i32, buttons_bottom_y as i32)).to_custom_err()?;
+    canvas.draw_line(Point::new(0, buttons_bottom_y as i32), Point::new(width as i32, buttons_bottom_y as i32))?;
 
 
     // render text
-    let mut files = program_data.files.write();
+    let files = program_data.files.write();
     let current_file = match fns::get_current_file(program_data, &files)? {
         Some(v) => v,
         None => return Ok(()),
     };
 
     let text_section = Rect::new(0, buttons_bottom_y as i32, width, height - buttons_bottom_y);
-    let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
+    //let text_spacing = (settings.font_size as f64 * settings.font_spacing) as u32;
     for (i, current_line) in current_file.contents.iter().enumerate() {
         render_text_line(current_line, i, &text_section, font, canvas, texture_creator, textures, settings)?;
     }
@@ -81,7 +81,7 @@ pub fn prepare_canvas (canvas: &mut WindowCanvas, program_data: &ProgramData, te
 
 
 
-pub fn render_text_line (text: &[char], text_y: usize, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<()> {
+pub fn render_text_line (text: &[char], text_y: usize, section: &Rect, font: &Font, canvas: &mut WindowCanvas, texture_creator: &TextureCreator<WindowContext>, textures: &ProgramTextures, settings: &ProgramSettings) -> Result<(), ProgramError> {
     for (i, char) in text.iter().enumerate() {
         let char = *char as usize;
         if char < 256 {
@@ -89,9 +89,11 @@ pub fn render_text_line (text: &[char], text_y: usize, section: &Rect, font: &Fo
             let (x, y) = get_char_position(i, text_y, section, settings);
             let (width, height) = fns::get_texture_size(char_texture);
             let (src, dest) = clamp_to_section(&Rect::new(x, y, width, height), section);
-            canvas.copy(char_texture, Some(src), dest).to_custom_err()?;
+            canvas.copy(char_texture, Some(src), dest)?;
         } else {
-            return err("WIPChar", &("cannot render char ".to_string() + &char.to_string()));
+            return err(RawProgramError::WIP {
+                details: format!("cannot render charater {char}")
+            });
         }
     }
     Ok(())
@@ -99,7 +101,7 @@ pub fn render_text_line (text: &[char], text_y: usize, section: &Rect, font: &Fo
 
 
 
-pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, render_cursor_lines: bool, current_file: &File, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<()> {
+pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, render_cursor_lines: bool, current_file: &File, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<(), ProgramError> {
 
     // render selection
     if let Some((mut selection_start_x, mut selection_start_y)) = cursor.selection_start {
@@ -128,19 +130,21 @@ pub fn render_cursor (cursor: &Cursor, cursor_width: u32, cursor_height: u32, re
     canvas.set_draw_color(settings.cursor_color);
     let (cursor_x, cursor_y) = get_char_position(cursor.x, cursor.y, section, settings);
     let cursor_rect = Rect::new(cursor_x, cursor_y + y_offset, cursor_width, cursor_height);
-    canvas.fill_rect(clamp_to_section(&cursor_rect, section).1).to_custom_err()
+    canvas.fill_rect(clamp_to_section(&cursor_rect, section).1)?;
 
+    Ok(())
 }
 
 
 
-pub fn render_rect_over_chars (x_pos_1: usize, x_pos_2: usize, y_pos: usize, char_height: u32, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<()> {
+pub fn render_rect_over_chars (x_pos_1: usize, x_pos_2: usize, y_pos: usize, char_height: u32, canvas: &mut WindowCanvas, section: &Rect, settings: &ProgramSettings) -> Result<(), ProgramError> {
     let y_offset = (settings.font_size * 3 / 32) as i32;
     let x_offset = -((settings.font_size * 1 / 32) as i32);
-    let (mut char_x_1, char_y) = get_char_position(x_pos_1, y_pos, section, settings);
-    let (mut char_x_2, char_y) = get_char_position(x_pos_2, y_pos, section, settings);
-    let selection_rect = Rect::new(char_x_1 + x_offset, char_y + y_offset, (char_x_2 - char_x_1) as u32, char_height);
-    canvas.fill_rect(clamp_to_section(&selection_rect, section).1).to_custom_err()
+    let (char_x_1, _char_y_1) = get_char_position(x_pos_1, y_pos, section, settings);
+    let (char_x_2, char_y_2) = get_char_position(x_pos_2, y_pos, section, settings);
+    let selection_rect = Rect::new(char_x_1 + x_offset, char_y_2 + y_offset, (char_x_2 - char_x_1) as u32, char_height);
+    canvas.fill_rect(clamp_to_section(&selection_rect, section).1)?;
+    Ok(())
 }
 
 
